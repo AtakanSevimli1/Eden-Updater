@@ -386,11 +386,7 @@ class UpdateService {
 
     try {
       print('Launching Eden from: $edenExecutable');
-      if (Platform.isWindows) {
-        await Process.start(edenExecutable, [], mode: ProcessStartMode.detached);
-      } else {
-        await Process.start(edenExecutable, [], mode: ProcessStartMode.detached);
-      }
+      await Process.start(edenExecutable, [], mode: ProcessStartMode.detached);
       print('Eden launched successfully');
     } catch (e) {
       throw Exception('Failed to launch Eden: $e');
