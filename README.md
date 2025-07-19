@@ -73,7 +73,7 @@ You can customize the installation path through the app's settings (feature comi
 
 ## GitHub Integration
 
-The updater fetches releases from the official Eden repositories:
+The updater fetches releases from these repositories:
 - **Stable releases**: https://github.com/eden-emulator/Releases/releases
 - **Nightly releases**: https://github.com/pflyly/eden-nightly/releases
 
