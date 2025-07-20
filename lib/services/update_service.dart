@@ -441,8 +441,8 @@ class UpdateService {
     
     final targetDir = Directory(targetPath);
     if (await targetDir.exists()) {
-      print('Removing existing $targetFolderName folder');
-      await targetDir.delete(recursive: true);
+      print('Cleaning existing $targetFolderName folder (preserving user data)');
+      await _cleanEdenFolder(targetPath);
     }
     
     final installDir = Directory(installPath);
@@ -457,8 +457,9 @@ class UpdateService {
         }
         
         if (await _containsEdenFiles(entity.path)) {
-          print('Found Eden folder: $folderName, renaming to: $targetFolderName');
-          await entity.rename(targetPath);
+          print('Found Eden folder: $folderName, merging into: $targetFolderName');
+          await _mergeEdenFolder(entity.path, targetPath);
+          await entity.delete(recursive: true);
           await _scanAndStoreEdenExecutable(targetPath);
           return;
         }
@@ -466,6 +467,67 @@ class UpdateService {
     }
     
     print('No suitable folder found to rename to $targetFolderName');
+  }
+
+  Future<void> _cleanEdenFolder(String edenPath) async {
+    final edenDir = Directory(edenPath);
+    if (!await edenDir.exists()) return;
+
+    await for (final entity in edenDir.list()) {
+      final name = path.basename(entity.path).toLowerCase();
+      
+      if (name == 'user') {
+        print('Preserving user data folder: $name');
+        continue;
+      }
+      
+      try {
+        await entity.delete(recursive: true);
+        print('Removed: ${path.basename(entity.path)}');
+      } catch (e) {
+        print('Failed to remove ${path.basename(entity.path)}: $e');
+      }
+    }
+  }
+
+  Future<void> _mergeEdenFolder(String sourcePath, String targetPath) async {
+    final sourceDir = Directory(sourcePath);
+    final targetDir = Directory(targetPath);
+    
+    await targetDir.create(recursive: true);
+    
+    await for (final entity in sourceDir.list()) {
+      final name = path.basename(entity.path);
+      final targetEntityPath = path.join(targetPath, name);
+      
+      try {
+        if (entity is File) {
+          await entity.copy(targetEntityPath);
+        } else if (entity is Directory) {
+          await _copyDirectory(entity.path, targetEntityPath);
+        }
+      } catch (e) {
+        print('Failed to merge ${entity.path}: $e');
+      }
+    }
+  }
+
+  Future<void> _copyDirectory(String sourcePath, String targetPath) async {
+    final sourceDir = Directory(sourcePath);
+    final targetDir = Directory(targetPath);
+    
+    await targetDir.create(recursive: true);
+    
+    await for (final entity in sourceDir.list()) {
+      final name = path.basename(entity.path);
+      final targetEntityPath = path.join(targetPath, name);
+      
+      if (entity is File) {
+        await entity.copy(targetEntityPath);
+      } else if (entity is Directory) {
+        await _copyDirectory(entity.path, targetEntityPath);
+      }
+    }
   }
 
   Future<bool> _containsEdenFiles(String folderPath) async {
