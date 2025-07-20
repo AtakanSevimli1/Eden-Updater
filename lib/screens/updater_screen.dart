@@ -35,7 +35,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
       _currentVersion = current;
     });
     
-    // Auto-check for updates if Eden is not installed
     if (current?.version == 'Not installed') {
       _checkForUpdates();
     }
@@ -79,11 +78,10 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     await _updateService.setReleaseChannel(newChannel);
     setState(() {
       _releaseChannel = newChannel;
-      _latestVersion = null; // Clear cached version when switching channels
+      _latestVersion = null;
       _statusMessage = 'Release channel changed to ${newChannel == UpdateService.nightlyChannel ? 'Nightly' : 'Stable'}';
     });
     
-    // Reload current version for the new channel
     await _loadCurrentVersion();
   }
 
@@ -127,13 +125,10 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   Future<void> _launchEden() async {
     try {
       await _updateService.launchEden();
-      // Close the updater GUI after successfully launching Eden
       if (mounted) {
         if (Platform.isAndroid || Platform.isIOS) {
-          // Mobile platforms
           SystemNavigator.pop();
         } else {
-          // Desktop platforms (Windows, Linux, macOS)
           exit(0);
         }
       }
@@ -179,7 +174,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                // Header
                 Row(
                   children: [
                     Container(
@@ -225,13 +219,11 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                 
                 const SizedBox(height: 32),
                 
-                // Version Info Card
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       children: [
-                        // Release Channel Selector
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -374,7 +366,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Progress Bar
                 if (_isDownloading) ...[
                   Card(
                     child: Padding(
@@ -397,7 +388,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                   const SizedBox(height: 24),
                 ],
                 
-                // Status Message
                 Text(
                   _statusMessage,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -408,7 +398,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                 
                 const Spacer(),
                 
-                // Action Buttons
                 Row(
                   children: [
                     Expanded(

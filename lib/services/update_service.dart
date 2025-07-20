@@ -9,9 +9,7 @@ import 'package:archive/archive.dart';
 import '../models/update_info.dart';
 
 class UpdateService {
-  // Official stable releases
   static const String _stableApiUrl = 'https://api.github.com/repos/eden-emulator/Releases/releases/latest';
-  // Unofficial nightly releases
   static const String _nightlyApiUrl = 'https://api.github.com/repos/pflyly/eden-nightly/releases/latest';
   
   static const String _currentVersionKey = 'current_version';
@@ -19,7 +17,6 @@ class UpdateService {
   static const String _releaseChannelKey = 'release_channel';
   static const String _edenExecutableKey = 'eden_executable_path';
   
-  // Release channels
   static const String stableChannel = 'stable';
   static const String nightlyChannel = 'nightly';
 
@@ -30,7 +27,6 @@ class UpdateService {
     final versionString = prefs.getString(channelVersionKey);
     
     if (versionString != null) {
-      // Verify that Eden actually exists before claiming it's installed
       final storedExecutablePath = await getStoredEdenExecutablePath();
       if (storedExecutablePath != null && await File(storedExecutablePath).exists()) {
         return UpdateInfo(
@@ -41,19 +37,16 @@ class UpdateService {
           fileSize: 0,
         );
       } else {
-        // Eden was deleted manually, clear the stored version
         print('Eden executable not found at stored path, clearing version info');
         await _clearStoredVersionInfo();
       }
     }
     
-    // Try to detect version from installed Eden
     try {
       final installPath = await getInstallPath();
       final edenExecutable = _getEdenExecutablePath(installPath);
       
       if (await File(edenExecutable).exists()) {
-        // Try to get version from executable (this would need to be implemented based on Eden's version command)
         final result = await Process.run(edenExecutable, ['--version']);
         if (result.exitCode == 0) {
           final version = result.stdout.toString().trim();
@@ -137,33 +130,28 @@ class UpdateService {
     final total = response.contentLength ?? 0;
 
     try {
-      // Download phase (0-50% of total progress)
       onStatusUpdate('Downloading...');
       await for (final chunk in response.stream) {
         sink.add(chunk);
         downloaded += chunk.length;
         if (total > 0) {
           final downloadProgress = downloaded / total;
-          onProgress(downloadProgress * 0.5); // Download is 50% of total progress
+          onProgress(downloadProgress * 0.5);
           onStatusUpdate('Downloading... ${(downloadProgress * 100).toInt()}%');
         }
       }
       
-      // Ensure file is properly closed before extraction
       await sink.close();
-      
-      // Add a small delay to ensure file handle is released
       await Future.delayed(Duration(milliseconds: 100));
       
       print('Download complete, starting extraction...');
       onStatusUpdate('Extracting...');
       
-      // Extraction phase (50-100% of total progress)
       await _extractAndInstall(
         filePath, 
         installPath,
         onProgress: (extractProgress) {
-          onProgress(0.5 + (extractProgress * 0.5)); // Extraction is remaining 50%
+          onProgress(0.5 + (extractProgress * 0.5));
           onStatusUpdate('Extracting... ${(extractProgress * 100).toInt()}%');
         },
       );
@@ -199,12 +187,11 @@ class UpdateService {
     } else if (archivePath.endsWith('.7z')) {
       print('Extracting 7Z archive...');
       await _extract7z(archivePath, installPath, onProgress: onProgress);
-      return; // Skip the standard archive extraction
+      return;
     } else {
       throw Exception('Unsupported archive format: ${path.extension(archivePath)}');
     }
 
-    // Extract files
     print('Archive contains ${archive.files.length} files');
     int extractedFiles = 0;
     final totalFiles = archive.files.where((f) => f.isFile).length;
@@ -219,21 +206,16 @@ class UpdateService {
         
         print('Extracting to: $extractPath');
         
-        // Create directory if needed
         await Directory(path.dirname(extractPath)).create(recursive: true);
-        
-        // Write file
         await File(extractPath).writeAsBytes(data);
         extractedFiles++;
         
-        // Report extraction progress
         if (onProgress != null && totalFiles > 0) {
           onProgress(extractedFiles / totalFiles);
         }
         
         print('Extracted file: $filename (${data.length} bytes)');
         
-        // Check if this is the main Eden executable and store its location
         if (_isEdenExecutable(filename)) {
           await _storeEdenExecutablePath(extractPath);
           if (Platform.isLinux || Platform.isMacOS) {
@@ -245,11 +227,7 @@ class UpdateService {
     }
 
     print('Extraction complete: $extractedFiles files extracted');
-    
-    // Find and rename the main extracted folder
     await _renameExtractedFolder(installPath);
-    
-    // Clean up download
     await file.delete();
     print('Cleaned up archive file: $archivePath');
   }
@@ -259,15 +237,13 @@ class UpdateService {
     print('Archive: $archivePath');
     print('Target: $installPath');
     
-    // Try to use system 7z command
     try {
       ProcessResult result;
       if (Platform.isWindows) {
-        // Try common 7z locations on Windows
         final sevenZipPaths = [
           'C:\\Program Files\\7-Zip\\7z.exe',
           'C:\\Program Files (x86)\\7-Zip\\7z.exe',
-          '7z', // If in PATH
+          '7z',
         ];
         
         String? workingPath;
@@ -299,11 +275,9 @@ class UpdateService {
           
           if (result.exitCode == 0) {
             print('7z extraction successful!');
-            // Report 100% progress for 7z extraction
             if (onProgress != null) {
               onProgress(1.0);
             }
-            // Find and rename the main extracted folder
             await _renameExtractedFolder(installPath);
             return;
           }
@@ -311,7 +285,6 @@ class UpdateService {
           print('No working 7z installation found');
         }
       } else {
-        // Linux/macOS - try p7zip
         print('Trying p7zip extraction...');
         result = await Process.run('7z', ['x', archivePath, '-o$installPath', '-y']);
         print('p7zip result: exit code ${result.exitCode}');
@@ -324,7 +297,6 @@ class UpdateService {
       print('7z extraction failed with exception: $e');
     }
 
-    // Fallback: show error message with instructions
     throw Exception(
       '7z extraction failed. Please install 7-Zip:\n'
       'Windows: Download from https://www.7-zip.org/\n'
@@ -346,7 +318,6 @@ class UpdateService {
     
     if (installPath == null) {
       final appDir = await getApplicationDocumentsDirectory();
-      // Main Eden folder for all channels
       installPath = path.join(appDir.path, 'Eden');
       await prefs.setString(_installPathKey, installPath);
     }
@@ -371,10 +342,8 @@ class UpdateService {
   }
 
   Future<void> launchEden() async {
-    // Try to use stored executable path first
     String? edenExecutable = await getStoredEdenExecutablePath();
     
-    // Fallback to default path if not stored
     if (edenExecutable == null || !await File(edenExecutable).exists()) {
       final installPath = await getInstallPath();
       edenExecutable = _getEdenExecutablePath(installPath);
@@ -425,7 +394,6 @@ class UpdateService {
   Future<void> _scanAndStoreEdenExecutable(String installPath) async {
     print('Scanning for Eden executable in: $installPath');
     
-    // Recursively search for Eden executable
     await for (final entity in Directory(installPath).list(recursive: true)) {
       if (entity is File) {
         final filename = path.basename(entity.path);
@@ -449,7 +417,6 @@ class UpdateService {
     final channelVersionKey = '${_currentVersionKey}_$channel';
     final channelExecKey = '${_edenExecutableKey}_$channel';
     
-    // Clear stored version and executable path for current channel
     await prefs.remove(channelVersionKey);
     await prefs.remove(channelExecKey);
     
@@ -463,32 +430,26 @@ class UpdateService {
     
     print('Looking for extracted folder to rename to: $targetFolderName');
     
-    // Remove existing target folder if it exists
     final targetDir = Directory(targetPath);
     if (await targetDir.exists()) {
       print('Removing existing $targetFolderName folder');
       await targetDir.delete(recursive: true);
     }
     
-    // Find the main extracted folder (skip downloads folder)
     final installDir = Directory(installPath);
     await for (final entity in installDir.list()) {
       if (entity is Directory) {
         final folderName = path.basename(entity.path);
         
-        // Skip the downloads folder and existing Eden folders
         if (folderName == 'downloads' || 
             folderName == 'Eden-Release' || 
             folderName == 'Eden-Nightly') {
           continue;
         }
         
-        // Check if this folder contains Eden executable or looks like an Eden folder
         if (await _containsEdenFiles(entity.path)) {
           print('Found Eden folder: $folderName, renaming to: $targetFolderName');
           await entity.rename(targetPath);
-          
-          // Scan for Eden executable in the renamed folder
           await _scanAndStoreEdenExecutable(targetPath);
           return;
         }
@@ -501,17 +462,14 @@ class UpdateService {
   Future<bool> _containsEdenFiles(String folderPath) async {
     final dir = Directory(folderPath);
     
-    // Check if folder contains Eden executable or common Eden files
     await for (final entity in dir.list(recursive: true)) {
       if (entity is File) {
         final filename = path.basename(entity.path).toLowerCase();
         
-        // Look for Eden executable
         if (_isEdenExecutable(filename)) {
           return true;
         }
         
-        // Look for other Eden-related files
         if (filename.contains('eden') || 
             filename.contains('yuzu') ||
             filename.endsWith('.nro') ||

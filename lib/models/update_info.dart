@@ -16,7 +16,6 @@ class UpdateInfo {
   });
 
   factory UpdateInfo.fromJson(Map<String, dynamic> json) {
-    // Find the appropriate asset for the current platform
     String downloadUrl = '';
     int fileSize = 0;
     
@@ -27,7 +26,6 @@ class UpdateInfo {
       downloadUrl = platformAsset['browser_download_url'] as String? ?? '';
       fileSize = platformAsset['size'] as int? ?? 0;
       
-      // Debug logging for file size issues
       print('Selected asset: ${platformAsset['name']}');
       print('Asset size: ${platformAsset['size']} (${fileSize} bytes)');
       print('Download URL: $downloadUrl');
@@ -57,24 +55,20 @@ class UpdateInfo {
   }
 
   static Map<String, dynamic>? _findWindowsAsset(List<dynamic> assets) {
-    // Priority 1: Exact matches for known Windows builds
     for (final asset in assets) {
       final name = (asset['name'] as String? ?? '').toLowerCase();
       
-      // Nightly: Eden-27466-Windows-x86_64.7z
       if (name.contains('windows') && name.contains('x86_64') && name.endsWith('.7z')) {
         print('Found nightly Windows build: ${asset['name']}');
         return asset;
       }
       
-      // Official: Eden-Windows-tmp-amd64.zip
       if (name.contains('windows') && name.contains('amd64') && name.endsWith('.zip')) {
         print('Found official Windows build: ${asset['name']}');
         return asset;
       }
     }
     
-    // Priority 2: Any Windows x86_64/amd64 build
     for (final asset in assets) {
       final name = (asset['name'] as String? ?? '').toLowerCase();
       if (name.contains('windows') && 
@@ -85,7 +79,6 @@ class UpdateInfo {
       }
     }
     
-    // Priority 3: Any Windows build (avoid ARM64)
     for (final asset in assets) {
       final name = (asset['name'] as String? ?? '').toLowerCase();
       if (name.contains('windows') && 
