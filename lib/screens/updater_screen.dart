@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -35,9 +36,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
       _currentVersion = current;
     });
     
-    if (current?.version == 'Not installed') {
-      _checkForUpdates();
-    }
+    _checkForUpdates();
   }
 
   Future<void> _loadReleaseChannel() async {
@@ -149,6 +148,14 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     }
   }
 
+  Future<void> _setTestVersion() async {
+    await _updateService.setCurrentVersionForTesting('v1.0.0-test');
+    await _loadCurrentVersion();
+    setState(() {
+      _statusMessage = 'Set test version v1.0.0-test';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -209,6 +216,12 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                         ],
                       ),
                     ),
+                    if (kDebugMode)
+                      IconButton(
+                        onPressed: _setTestVersion,
+                        icon: const Icon(Icons.bug_report),
+                        tooltip: 'Set Test Version',
+                      ),
                     IconButton(
                       onPressed: _openGitHub,
                       icon: const Icon(Icons.open_in_new),

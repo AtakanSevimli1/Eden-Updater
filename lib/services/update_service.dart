@@ -312,6 +312,15 @@ class UpdateService {
     await prefs.setString(channelVersionKey, version);
   }
 
+  // Debug method to manually set version for testing
+  Future<void> setCurrentVersionForTesting(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    final channel = await getReleaseChannel();
+    final channelVersionKey = '${_currentVersionKey}_$channel';
+    await prefs.setString(channelVersionKey, version);
+    print('Set current version to: $version for channel: $channel');
+  }
+
   Future<String> getInstallPath() async {
     final prefs = await SharedPreferences.getInstance();
     String? installPath = prefs.getString(_installPathKey);
