@@ -1,4 +1,6 @@
 import 'dart:io' as io;
+import '../core/utils/file_utils.dart';
+import '../core/utils/date_utils.dart';
 
 class UpdateInfo {
   final String version;
@@ -25,10 +27,6 @@ class UpdateInfo {
     if (platformAsset != null) {
       downloadUrl = platformAsset['browser_download_url'] as String? ?? '';
       fileSize = platformAsset['size'] as int? ?? 0;
-      
-      print('Selected asset: ${platformAsset['name']}');
-      print('Asset size: ${platformAsset['size']} (${fileSize} bytes)');
-      print('Download URL: $downloadUrl');
     }
 
     return UpdateInfo(
@@ -117,31 +115,7 @@ class UpdateInfo {
     return null;
   }
 
-  String get formattedFileSize {
-    if (fileSize == 0) return 'Unknown size';
-    
-    const units = ['B', 'KB', 'MB', 'GB'];
-    double size = fileSize.toDouble();
-    int unitIndex = 0;
-    
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    
-    return '${size.toStringAsFixed(1)} ${units[unitIndex]}';
-  }
+  String get formattedFileSize => FileUtils.formatFileSize(fileSize);
 
-  String get formattedReleaseDate {
-    final now = DateTime.now();
-    final difference = now.difference(releaseDate);
-    
-    if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
-    } else {
-      return 'Recently';
-    }
-  }
+  String get formattedReleaseDate => DateUtils.formatRelativeTime(releaseDate);
 }
