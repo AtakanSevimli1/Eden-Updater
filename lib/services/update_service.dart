@@ -402,7 +402,15 @@ class UpdateService {
 
     try {
       print('Launching Eden from: $edenExecutable');
-      await Process.start(edenExecutable, [], mode: ProcessStartMode.detached);
+      final workingDirectory = path.dirname(edenExecutable);
+      print('Working directory: $workingDirectory');
+      
+      await Process.start(
+        edenExecutable, 
+        [], 
+        mode: ProcessStartMode.detached,
+        workingDirectory: workingDirectory,
+      );
       print('Eden launched successfully');
     } catch (e) {
       throw Exception('Failed to launch Eden: $e');
@@ -417,7 +425,9 @@ class UpdateService {
   bool _isEdenExecutable(String filename) {
     final name = filename.toLowerCase();
     if (Platform.isWindows) {
-      return name.endsWith('eden.exe') || (name.contains('eden') && name.endsWith('.exe'));
+      // Prioritize GUI version, avoid command-line version
+      if (name == 'eden.exe') return true;
+      return false;
     } else {
       return name == 'eden' || (name.contains('eden') && !name.contains('.'));
     }
@@ -441,21 +451,57 @@ class UpdateService {
   Future<void> _scanAndStoreEdenExecutable(String installPath) async {
     print('Scanning for Eden executable in: $installPath');
     
+    List<String> foundExecutables = [];
+    
+    // First pass: collect all potential executables
     await for (final entity in Directory(installPath).list(recursive: true)) {
       if (entity is File) {
         final filename = path.basename(entity.path);
         if (_isEdenExecutable(filename)) {
-          await _storeEdenExecutablePath(entity.path);
-          if (Platform.isLinux) {
-            await Process.run('chmod', ['+x', entity.path]);
-            print('Made executable: ${entity.path}');
-          }
-          return;
+          foundExecutables.add(entity.path);
+          print('Found potential executable: $filename at ${entity.path}');
         }
       }
     }
     
-    print('No Eden executable found in extracted files');
+    if (foundExecutables.isEmpty) {
+      print('No Eden executable found in extracted files');
+      return;
+    }
+    
+    // Prioritize GUI versions over command-line versions
+    String? selectedExecutable;
+    
+    // First priority: exact matches
+    for (final exe in foundExecutables) {
+      final name = path.basename(exe).toLowerCase();
+      if (name == 'eden.exe') {
+        selectedExecutable = exe;
+        break;
+      }
+    }
+    
+    // Second priority: avoid command-line versions
+    if (selectedExecutable == null) {
+      for (final exe in foundExecutables) {
+        final name = path.basename(exe).toLowerCase();
+        if (!name.contains('cmd') && !name.contains('cli')) {
+          selectedExecutable = exe;
+          break;
+        }
+      }
+    }
+    
+    // Fallback: use first found
+    selectedExecutable ??= foundExecutables.first;
+    
+    print('Selected executable: ${path.basename(selectedExecutable)} at $selectedExecutable');
+    await _storeEdenExecutablePath(selectedExecutable);
+    
+    if (Platform.isLinux) {
+      await Process.run('chmod', ['+x', selectedExecutable]);
+      print('Made executable: $selectedExecutable');
+    }
   }
 
   Future<void> _clearStoredVersionInfo() async {
@@ -599,6 +645,13 @@ class UpdateService {
       final channelName = channel == nightlyChannel ? 'Nightly' : 'Stable';
       final shortcutName = 'Eden $channelName.lnk';
       
+      // Get the Eden executable path
+      final edenExecutable = await getStoredEdenExecutablePath();
+      if (edenExecutable == null || !await File(edenExecutable).exists()) {
+        print('Eden executable not found, cannot create shortcut');
+        return;
+      }
+      
       // Get desktop path
       final result = await Process.run('powershell', [
         '-Command',
@@ -613,18 +666,14 @@ class UpdateService {
       final desktopPath = result.stdout.toString().trim();
       final shortcutPath = path.join(desktopPath, shortcutName);
       
-      // Get current executable path (the updater)
-      final currentExe = Platform.resolvedExecutable;
-      
-      // Create PowerShell script to create shortcut
+      // Create PowerShell script to create shortcut pointing directly to Eden
       final powershellScript = '''
 \$WshShell = New-Object -comObject WScript.Shell
 \$Shortcut = \$WshShell.CreateShortcut("$shortcutPath")
-\$Shortcut.TargetPath = "$currentExe"
-\$Shortcut.Arguments = "--auto-launch --channel=$channel"
-\$Shortcut.WorkingDirectory = "${path.dirname(currentExe)}"
-\$Shortcut.IconLocation = "$currentExe"
-\$Shortcut.Description = "Eden $channelName - Auto-updating launcher"
+\$Shortcut.TargetPath = "$edenExecutable"
+\$Shortcut.WorkingDirectory = "${path.dirname(edenExecutable)}"
+\$Shortcut.IconLocation = "$edenExecutable"
+\$Shortcut.Description = "Eden $channelName Emulator"
 \$Shortcut.Save()
 ''';
       
@@ -635,6 +684,7 @@ class UpdateService {
       
       if (scriptResult.exitCode == 0) {
         print('Created desktop shortcut: $shortcutPath');
+        print('Shortcut points to: $edenExecutable');
       } else {
         print('Failed to create shortcut: ${scriptResult.stderr}');
       }

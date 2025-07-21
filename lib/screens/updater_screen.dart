@@ -859,7 +859,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                   ),
                 ],
                 
-                // Action Buttons - Nintendo Switch Joy-Con style
                 if (!_isDownloading) ...[
                   Container(
                     padding: const EdgeInsets.all(4),
