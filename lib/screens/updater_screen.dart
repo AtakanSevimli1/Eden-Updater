@@ -204,7 +204,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     try {
       await _updateService.launchEden();
       if (mounted) {
-        if (Platform.isAndroid || Platform.isIOS) {
+        if (Platform.isAndroid) {
           SystemNavigator.pop();
         } else {
           exit(0);
