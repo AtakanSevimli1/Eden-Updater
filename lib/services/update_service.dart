@@ -257,7 +257,7 @@ class UpdateService {
         
         if (_isEdenExecutable(filename)) {
           await _storeEdenExecutablePath(extractPath);
-          if (Platform.isLinux || Platform.isMacOS) {
+          if (Platform.isLinux) {
             await Process.run('chmod', ['+x', extractPath]);
             print('Made executable: $extractPath');
           }
@@ -339,8 +339,7 @@ class UpdateService {
     throw Exception(
       '7z extraction failed. Please install 7-Zip:\n'
       'Windows: Download from https://www.7-zip.org/\n'
-      'Linux: sudo apt install p7zip-full\n'
-      'macOS: brew install p7zip'
+      'Linux: sudo apt install p7zip-full'
     );
   }
 
@@ -447,7 +446,7 @@ class UpdateService {
         final filename = path.basename(entity.path);
         if (_isEdenExecutable(filename)) {
           await _storeEdenExecutablePath(entity.path);
-          if (Platform.isLinux || Platform.isMacOS) {
+          if (Platform.isLinux) {
             await Process.run('chmod', ['+x', entity.path]);
             print('Made executable: ${entity.path}');
           }

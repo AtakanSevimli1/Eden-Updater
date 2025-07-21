@@ -45,8 +45,7 @@ class UpdateInfo {
       return _findWindowsAsset(assets);
     } else if (io.Platform.isLinux) {
       return _findLinuxAsset(assets);
-    } else if (io.Platform.isMacOS) {
-      return _findMacOSAsset(assets);
+
     } else if (io.Platform.isAndroid) {
       return _findAndroidAsset(assets);
     }
@@ -106,15 +105,7 @@ class UpdateInfo {
     return null;
   }
 
-  static Map<String, dynamic>? _findMacOSAsset(List<dynamic> assets) {
-    for (final asset in assets) {
-      final name = (asset['name'] as String? ?? '').toLowerCase();
-      if (name.contains('macos') || name.contains('mac') || name.endsWith('.dmg')) {
-        return asset;
-      }
-    }
-    return null;
-  }
+
 
   static Map<String, dynamic>? _findAndroidAsset(List<dynamic> assets) {
     for (final asset in assets) {

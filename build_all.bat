@@ -26,17 +26,9 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Building for macOS...
-flutter build macos --release
-if %errorlevel% neq 0 (
-    echo macOS build failed (this is expected on non-Mac systems)
-)
-
-echo.
 echo Build complete! Check the build/ directory for binaries.
 echo.
 echo Windows: build\windows\x64\runner\Release\
 echo Linux: build\linux\x64\release\bundle\
 echo Android: build\app\outputs\flutter-apk\app-release.apk
-echo macOS: build\macos\Build\Products\Release\
 pause
