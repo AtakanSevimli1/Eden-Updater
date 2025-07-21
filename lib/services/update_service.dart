@@ -74,24 +74,42 @@ class UpdateService {
   }
 
   Future<UpdateInfo> getLatestVersion({String? channel}) async {
+    const int maxRetries = 10;
+    const Duration retryDelay = Duration(seconds: 3);
+    
     final releaseChannel = channel ?? await getReleaseChannel();
     final apiUrl = releaseChannel == nightlyChannel ? _nightlyApiUrl : _stableApiUrl;
     
-    try {
-      final response = await http.get(
-        Uri.parse(apiUrl),
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-      );
+    Exception? lastException;
+    
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        print('Checking for updates (attempt $attempt/$maxRetries)...');
+        
+        final response = await http.get(
+          Uri.parse(apiUrl),
+          headers: {'Accept': 'application/vnd.github.v3+json'},
+        ).timeout(Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return UpdateInfo.fromJson(data);
-      } else {
-        throw Exception('Failed to fetch latest version: ${response.statusCode}');
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print('Successfully fetched latest version on attempt $attempt');
+          return UpdateInfo.fromJson(data);
+        } else {
+          throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
+        }
+      } catch (e) {
+        lastException = Exception('Attempt $attempt failed: $e');
+        print('Update check failed (attempt $attempt/$maxRetries): $e');
+        
+        if (attempt < maxRetries) {
+          print('Retrying in ${retryDelay.inSeconds} seconds...');
+          await Future.delayed(retryDelay);
+        }
       }
-    } catch (e) {
-      throw Exception('Network error: $e');
     }
+    
+    throw Exception('Failed to fetch latest version after $maxRetries attempts. Last error: $lastException');
   }
 
   Future<String> getReleaseChannel() async {
@@ -157,6 +175,13 @@ class UpdateService {
       );
       
       await _updateCurrentVersion(updateInfo.version);
+      
+      // Create shortcut on first installation
+      final currentVersion = await getCurrentVersion();
+      if (currentVersion?.version != 'Not installed') {
+        await _createEdenShortcut();
+      }
+      
       onStatusUpdate('Installation complete!');
       
     } catch (error) {
@@ -552,5 +577,58 @@ class UpdateService {
     }
     
     return false;
+  }
+
+  Future<void> _createEdenShortcut() async {
+    if (!Platform.isWindows) return;
+    
+    try {
+      final channel = await getReleaseChannel();
+      final channelName = channel == nightlyChannel ? 'Nightly' : 'Stable';
+      final shortcutName = 'Eden $channelName.lnk';
+      
+      // Get desktop path
+      final result = await Process.run('powershell', [
+        '-Command',
+        '[Environment]::GetFolderPath("Desktop")'
+      ]);
+      
+      if (result.exitCode != 0) {
+        print('Failed to get desktop path');
+        return;
+      }
+      
+      final desktopPath = result.stdout.toString().trim();
+      final shortcutPath = path.join(desktopPath, shortcutName);
+      
+      // Get current executable path (the updater)
+      final currentExe = Platform.resolvedExecutable;
+      
+      // Create PowerShell script to create shortcut
+      final powershellScript = '''
+\$WshShell = New-Object -comObject WScript.Shell
+\$Shortcut = \$WshShell.CreateShortcut("$shortcutPath")
+\$Shortcut.TargetPath = "$currentExe"
+\$Shortcut.Arguments = "--auto-launch --channel=$channel"
+\$Shortcut.WorkingDirectory = "${path.dirname(currentExe)}"
+\$Shortcut.IconLocation = "$currentExe"
+\$Shortcut.Description = "Eden $channelName - Auto-updating launcher"
+\$Shortcut.Save()
+''';
+      
+      final scriptResult = await Process.run('powershell', [
+        '-Command',
+        powershellScript
+      ]);
+      
+      if (scriptResult.exitCode == 0) {
+        print('Created desktop shortcut: $shortcutPath');
+      } else {
+        print('Failed to create shortcut: ${scriptResult.stderr}');
+      }
+      
+    } catch (e) {
+      print('Error creating shortcut: $e');
+    }
   }
 }

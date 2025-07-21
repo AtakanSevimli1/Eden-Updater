@@ -7,7 +7,14 @@ import '../services/update_service.dart';
 import '../models/update_info.dart';
 
 class UpdaterScreen extends StatefulWidget {
-  const UpdaterScreen({super.key});
+  final bool isAutoLaunch;
+  final String? channel;
+  
+  const UpdaterScreen({
+    super.key,
+    this.isAutoLaunch = false,
+    this.channel,
+  });
 
   @override
   State<UpdaterScreen> createState() => _UpdaterScreenState();
@@ -22,12 +29,52 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   double _downloadProgress = 0.0;
   String _statusMessage = 'Ready to check for updates';
   String _releaseChannel = UpdateService.stableChannel;
+  bool _autoLaunchInProgress = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentVersion();
-    _loadReleaseChannel();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Set channel if provided via command line
+    if (widget.channel != null) {
+      await _updateService.setReleaseChannel(widget.channel!);
+    }
+    
+    await _loadCurrentVersion();
+    await _loadReleaseChannel();
+    
+    if (widget.isAutoLaunch) {
+      _autoLaunchInProgress = true;
+      await _autoLaunchSequence();
+    } else {
+      _checkForUpdates();
+    }
+  }
+
+  Future<void> _autoLaunchSequence() async {
+    setState(() {
+      _statusMessage = 'Auto-launching Eden...';
+    });
+    
+    // Check for updates
+    await _checkForUpdates();
+    
+    // If update is available, download it automatically
+    if (_latestVersion != null && 
+        _currentVersion != null && 
+        _latestVersion!.version != _currentVersion!.version) {
+      setState(() {
+        _statusMessage = 'Update found, downloading automatically...';
+      });
+      await _downloadUpdate();
+    }
+    
+    // Launch Eden
+    await Future.delayed(Duration(milliseconds: 500));
+    await _launchEden();
   }
 
   Future<void> _loadCurrentVersion() async {
@@ -53,7 +100,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     });
 
     try {
-      final latest = await _updateService.getLatestVersion(channel: _releaseChannel);
+      final latest = await _checkForUpdatesWithRetry();
       setState(() {
         _latestVersion = latest;
         _isChecking = false;
@@ -71,6 +118,36 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
         _statusMessage = 'Failed to check for updates: $e';
       });
     }
+  }
+
+  Future<UpdateInfo> _checkForUpdatesWithRetry() async {
+    const int maxRetries = 10;
+    const Duration retryDelay = Duration(seconds: 3);
+    
+    Exception? lastException;
+    
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        setState(() {
+          _statusMessage = 'Checking for updates (attempt $attempt/$maxRetries)...';
+        });
+        
+        final latest = await _updateService.getLatestVersion(channel: _releaseChannel);
+        return latest;
+      } catch (e) {
+        lastException = Exception('Attempt $attempt failed: $e');
+        print('Update check failed (attempt $attempt/$maxRetries): $e');
+        
+        if (attempt < maxRetries) {
+          setState(() {
+            _statusMessage = 'Update check failed, retrying in ${retryDelay.inSeconds} seconds... ($attempt/$maxRetries)';
+          });
+          await Future.delayed(retryDelay);
+        }
+      }
+    }
+    
+    throw Exception('Failed to check for updates after $maxRetries attempts. Last error: $lastException');
   }
 
   Future<void> _changeReleaseChannel(String newChannel) async {
@@ -163,6 +240,74 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     final hasUpdate = _latestVersion != null && 
         _currentVersion != null && 
         _latestVersion!.version != _currentVersion!.version;
+
+    // Show simplified UI during auto-launch
+    if (widget.isAutoLaunch && _autoLaunchInProgress) {
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                theme.colorScheme.surface,
+                theme.colorScheme.surface.withOpacity(0.8),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.videogame_asset,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Eden Launcher',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_isDownloading) ...[
+                  LinearProgressIndicator(
+                    value: _downloadProgress,
+                    backgroundColor: theme.colorScheme.surfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '${(_downloadProgress * 100).toInt()}% Complete',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                ] else ...[
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                ],
+                Text(
+                  _statusMessage,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: Container(
