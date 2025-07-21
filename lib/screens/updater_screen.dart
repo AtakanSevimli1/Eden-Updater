@@ -247,12 +247,14 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: [
+                theme.colorScheme.background,
                 theme.colorScheme.surface,
-                theme.colorScheme.surface.withOpacity(0.8),
+                theme.colorScheme.primary.withOpacity(0.1),
               ],
+              stops: const [0.0, 0.7, 1.0],
             ),
           ),
           child: Center(
@@ -263,8 +265,22 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.secondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.videogame_asset,
@@ -313,300 +329,628 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
+              theme.colorScheme.background,
               theme.colorScheme.surface,
-              theme.colorScheme.surface.withOpacity(0.8),
+              theme.colorScheme.primary.withOpacity(0.1),
             ],
+            stops: const [0.0, 0.7, 1.0],
           ),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.videogame_asset,
-                        color: Colors.white,
-                        size: 32,
-                      ),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary.withOpacity(0.1),
+                        theme.colorScheme.secondary.withOpacity(0.1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Eden Updater',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.secondary,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          Text(
-                            'Keep your Eden emulator up to date',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.4),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.videogame_asset,
+                          color: Colors.white,
+                          size: 40,
+                        ),
                       ),
-                    ),
-                    if (kDebugMode)
-                      IconButton(
-                        onPressed: _setTestVersion,
-                        icon: const Icon(Icons.bug_report),
-                        tooltip: 'Set Test Version',
-                      ),
-                    IconButton(
-                      onPressed: _openGitHub,
-                      icon: const Icon(Icons.open_in_new),
-                      tooltip: 'Open GitHub',
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 32),
-                
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Release Channel',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w500,
+                              'Eden Updater',
+                              style: theme.textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Keep your Eden emulator up to date',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        children: [
+                          if (kDebugMode)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceVariant,
-                                borderRadius: BorderRadius.circular(20),
+                                color: theme.colorScheme.tertiary.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _releaseChannel,
-                                  isDense: true,
-                                  items: [
-                                    DropdownMenuItem(
-                                      value: UpdateService.stableChannel,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.verified,
-                                            size: 16,
-                                            color: Colors.green,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text('Stable'),
-                                        ],
-                                      ),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: UpdateService.nightlyChannel,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.science,
-                                            size: 16,
-                                            color: Colors.orange,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text('Nightly'),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  onChanged: _isChecking || _isDownloading 
-                                      ? null 
-                                      : (value) {
-                                          if (value != null) {
-                                            _changeReleaseChannel(value);
-                                          }
-                                        },
+                              child: IconButton(
+                                onPressed: _setTestVersion,
+                                icon: Icon(
+                                  Icons.bug_report,
+                                  color: theme.colorScheme.tertiary,
                                 ),
+                                tooltip: 'Set Test Version',
                               ),
                             ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Current Version',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                  ),
-                                ),
-                                Text(
-                                  _currentVersion?.version ?? 'Unknown',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (_latestVersion != null)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    'Latest Version',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                    ),
-                                  ),
-                                  Text(
-                                    _latestVersion!.version,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: hasUpdate ? theme.colorScheme.primary : null,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                        
-                        if (hasUpdate) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(8),
+                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.new_releases,
-                                  color: theme.colorScheme.primary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'New update available!',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                            child: IconButton(
+                              onPressed: _openGitHub,
+                              icon: Icon(
+                                Icons.open_in_new,
+                                color: theme.colorScheme.primary,
+                              ),
+                              tooltip: 'Open GitHub',
                             ),
                           ),
                         ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 
                 const SizedBox(height: 24),
                 
-                if (_isDownloading) ...[
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
+                // Release Channel Selector
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
                         children: [
-                          LinearProgressIndicator(
-                            value: _downloadProgress,
-                            backgroundColor: theme.colorScheme.surfaceVariant,
+                          Icon(
+                            Icons.tune,
+                            color: theme.colorScheme.primary,
+                            size: 20,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(width: 12),
                           Text(
-                            '${(_downloadProgress * 100).toInt()}% Complete',
-                            style: theme.textTheme.bodyMedium,
+                            'Release Channel',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
-                    ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              theme.colorScheme.primary.withOpacity(0.1),
+                              theme.colorScheme.secondary.withOpacity(0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _releaseChannel,
+                            isDense: true,
+                            items: [
+                              DropdownMenuItem(
+                                value: UpdateService.stableChannel,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.verified,
+                                      size: 18,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Stable',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: UpdateService.nightlyChannel,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.science,
+                                      size: 18,
+                                      color: theme.colorScheme.secondary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Nightly',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: theme.colorScheme.secondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            onChanged: _isChecking || _isDownloading 
+                                ? null 
+                                : (value) {
+                                    if (value != null) {
+                                      _changeReleaseChannel(value);
+                                    }
+                                  },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                ],
-                
-                Text(
-                  _statusMessage,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
-                  ),
-                  textAlign: TextAlign.center,
                 ),
                 
-                const Spacer(),
+                const SizedBox(height: 24),
                 
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isChecking || _isDownloading ? null : _checkForUpdates,
-                        icon: _isChecking 
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.refresh),
-                        label: Text(_isChecking ? 'Checking...' : 'Check for Updates'),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              theme.colorScheme.primary.withOpacity(0.1),
+                              theme.colorScheme.primary.withOpacity(0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.phone_android,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Current',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _currentVersion?.version ?? 'Unknown',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _isDownloading 
-                            ? null 
-                            : (isNotInstalled || hasUpdate) 
-                                ? _downloadUpdate 
-                                : _launchEden,
-                        icon: _isDownloading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              hasUpdate 
+                                  ? theme.colorScheme.secondary.withOpacity(0.1)
+                                  : theme.colorScheme.tertiary.withOpacity(0.1),
+                              hasUpdate 
+                                  ? theme.colorScheme.secondary.withOpacity(0.05)
+                                  : theme.colorScheme.tertiary.withOpacity(0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: hasUpdate 
+                                ? theme.colorScheme.secondary.withOpacity(0.3)
+                                : theme.colorScheme.tertiary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  hasUpdate ? Icons.new_releases : Icons.check_circle,
+                                  color: hasUpdate 
+                                      ? theme.colorScheme.secondary
+                                      : theme.colorScheme.tertiary,
+                                  size: 20,
                                 ),
-                              )
-                            : Icon(
-                                _isDownloading 
-                                    ? Icons.download 
-                                    : (isNotInstalled || hasUpdate) 
-                                        ? Icons.download 
-                                        : Icons.play_arrow
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Latest',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: hasUpdate 
+                                        ? theme.colorScheme.secondary
+                                        : theme.colorScheme.tertiary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _latestVersion?.version ?? 'Checking...',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
                               ),
-                        label: Text(
-                          _isDownloading 
-                              ? 'Downloading...' 
-                              : isNotInstalled 
-                                  ? 'Install Eden'
-                                  : hasUpdate 
-                                      ? 'Update Eden' 
-                                      : 'Launch Eden'
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
+                ),
+                
+                const SizedBox(height: 24),
+                
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      if (_isDownloading) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.download,
+                              color: theme.colorScheme.secondary,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Downloading Update',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.secondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: LinearGradient(
+                              colors: [
+                                theme.colorScheme.primary.withOpacity(0.1),
+                                theme.colorScheme.secondary.withOpacity(0.1),
+                              ],
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: LinearProgressIndicator(
+                              value: _downloadProgress,
+                              backgroundColor: Colors.transparent,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                theme.colorScheme.secondary,
+                              ),
+                              minHeight: 8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '${(_downloadProgress * 100).toInt()}% Complete',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isChecking)
+                            Container(
+                              width: 20,
+                              height: 20,
+                              margin: const EdgeInsets.only(right: 12),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.primary,
+                              ),
+                            )
+                          else if (hasUpdate)
+                            Container(
+                              margin: const EdgeInsets.only(right: 12),
+                              child: Icon(
+                                Icons.new_releases,
+                                color: theme.colorScheme.secondary,
+                                size: 20,
+                              ),
+                            )
+                          else if (_latestVersion != null)
+                            Container(
+                              margin: const EdgeInsets.only(right: 12),
+                              child: Icon(
+                                Icons.check_circle,
+                                color: theme.colorScheme.tertiary,
+                                size: 20,
+                              ),
+                            ),
+                          
+                          Flexible(
+                            child: Text(
+                              _statusMessage,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const Spacer(),
+                
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _isChecking || _isDownloading
+                                  ? [
+                                      theme.colorScheme.outline.withOpacity(0.3),
+                                      theme.colorScheme.outline.withOpacity(0.2),
+                                    ]
+                                  : [
+                                      theme.colorScheme.primary,
+                                      theme.colorScheme.primary.withOpacity(0.8),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: _isChecking || _isDownloading
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: _isChecking || _isDownloading ? null : _checkForUpdates,
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (_isChecking)
+                                      const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.refresh,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _isChecking ? 'Checking...' : 'Check Updates',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(width: 8),
+                      
+                      Expanded(
+                        child: Container(
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _isDownloading
+                                  ? [
+                                      theme.colorScheme.outline.withOpacity(0.3),
+                                      theme.colorScheme.outline.withOpacity(0.2),
+                                    ]
+                                  : [
+                                      theme.colorScheme.secondary,
+                                      theme.colorScheme.secondary.withOpacity(0.8),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: _isDownloading
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: theme.colorScheme.secondary.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: _isDownloading 
+                                  ? null 
+                                  : (isNotInstalled || hasUpdate) 
+                                      ? _downloadUpdate 
+                                      : _launchEden,
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (_isDownloading)
+                                      const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    else
+                                      Icon(
+                                        (isNotInstalled || hasUpdate) 
+                                            ? Icons.download 
+                                            : Icons.play_arrow,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _isDownloading 
+                                          ? 'Downloading...' 
+                                          : isNotInstalled 
+                                              ? 'Install Eden'
+                                              : hasUpdate 
+                                                  ? 'Update Eden' 
+                                                  : 'Launch Eden',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

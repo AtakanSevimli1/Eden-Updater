@@ -4,9 +4,8 @@ A cross-platform GUI updater for the Eden emulator, built with Flutter. This upd
 
 ## Features
 
-- 🎮 Clean, modern UI inspired by the yuzu updater
-- 🔄 Automatic update checking from GitHub releases
-- 📱 Cross-platform support (Windows, Linux, Android, macOS)
+- 🔄 Automatic update checking from GitHub/Git releases
+- 📱 Cross-platform support (Windows, Linux, Android)
 - 📦 Automatic download and installation of updates
 - 🚀 Launch Eden directly from the updater
 - 🌐 Quick access to the Eden GitHub repository

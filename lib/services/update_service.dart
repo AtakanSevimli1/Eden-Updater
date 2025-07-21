@@ -567,7 +567,6 @@ class UpdateService {
         }
         
         if (filename.contains('eden') || 
-            filename.contains('yuzu') ||
             filename.endsWith('.nro') ||
             filename.endsWith('.nsp') ||
             filename.endsWith('.xci')) {
