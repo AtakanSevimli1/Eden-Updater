@@ -83,8 +83,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     setState(() {
       _currentVersion = current;
     });
-    
-    _checkForUpdates();
   }
 
   Future<void> _loadReleaseChannel() async {
@@ -862,135 +860,117 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                 ],
                 
                 // Action Buttons - Nintendo Switch Joy-Con style
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withOpacity(0.2),
+                if (!_isDownloading) ...[
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withOpacity(0.2),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 56,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _isChecking || _isDownloading
-                                  ? [
-                                      theme.colorScheme.outline.withOpacity(0.3),
-                                      theme.colorScheme.outline.withOpacity(0.2),
-                                    ]
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: _isChecking
+                                    ? [
+                                        theme.colorScheme.outline.withOpacity(0.3),
+                                        theme.colorScheme.outline.withOpacity(0.2),
+                                      ]
+                                    : [
+                                        theme.colorScheme.primary,
+                                        theme.colorScheme.primary.withOpacity(0.8),
+                                      ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: _isChecking
+                                  ? null
                                   : [
-                                      theme.colorScheme.primary,
-                                      theme.colorScheme.primary.withOpacity(0.8),
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary.withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
                                     ],
                             ),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: _isChecking || _isDownloading
-                                ? null
-                                : [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: _isChecking || _isDownloading ? null : _checkForUpdates,
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (_isChecking)
-                                      const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: _isChecking ? null : _checkForUpdates,
+                                child: Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (_isChecking)
+                                        const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      else
+                                        const Icon(
+                                          Icons.refresh,
                                           color: Colors.white,
+                                          size: 20,
                                         ),
-                                      )
-                                    else
-                                      const Icon(
-                                        Icons.refresh,
-                                        color: Colors.white,
-                                        size: 20,
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _isChecking ? 'Checking...' : 'Check Updates',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _isChecking ? 'Checking...' : 'Check Updates',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      
-                      const SizedBox(width: 8),
-                      
-                      Expanded(
-                        child: Container(
-                          height: 56,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _isDownloading
-                                  ? [
-                                      theme.colorScheme.outline.withOpacity(0.3),
-                                      theme.colorScheme.outline.withOpacity(0.2),
-                                    ]
-                                  : [
-                                      theme.colorScheme.secondary,
-                                      theme.colorScheme.secondary.withOpacity(0.8),
-                                    ],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: _isDownloading
-                                ? null
-                                : [
-                                    BoxShadow(
-                                      color: theme.colorScheme.secondary.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
+                        
+                        const SizedBox(width: 8),
+                        
+                        Expanded(
+                          child: Container(
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  theme.colorScheme.secondary,
+                                  theme.colorScheme.secondary.withOpacity(0.8),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(20),
-                              onTap: _isDownloading 
-                                  ? null 
-                                  : (isNotInstalled || hasUpdate) 
-                                      ? _downloadUpdate 
-                                      : _launchEden,
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (_isDownloading)
-                                      const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    else
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.secondary.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: (isNotInstalled || hasUpdate) 
+                                    ? _downloadUpdate 
+                                    : _launchEden,
+                                child: Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
                                       Icon(
                                         (isNotInstalled || hasUpdate) 
                                             ? Icons.download 
@@ -998,31 +978,30 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                                         color: Colors.white,
                                         size: 20,
                                       ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _isDownloading 
-                                          ? 'Downloading...' 
-                                          : isNotInstalled 
-                                              ? 'Install Eden'
-                                              : hasUpdate 
-                                                  ? 'Update Eden' 
-                                                  : 'Launch Eden',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        isNotInstalled 
+                                            ? 'Install Eden'
+                                            : hasUpdate 
+                                                ? 'Update Eden' 
+                                                : 'Launch Eden',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
                         ],
                       ),
                     ),
