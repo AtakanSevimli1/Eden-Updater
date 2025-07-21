@@ -1,4 +1,5 @@
 import 'dart:io' as io;
+import 'dart:developer' as developer;
 import '../core/utils/file_utils.dart';
 import '../core/utils/date_utils.dart';
 
@@ -56,12 +57,12 @@ class UpdateInfo {
       final name = (asset['name'] as String? ?? '').toLowerCase();
       
       if (name.contains('windows') && name.contains('x86_64') && name.endsWith('.7z')) {
-        print('Found nightly Windows build: ${asset['name']}');
+        developer.log('Found nightly Windows build: ${asset['name']}', name: 'UpdateInfo');
         return asset;
       }
       
       if (name.contains('windows') && name.contains('amd64') && name.endsWith('.zip')) {
-        print('Found official Windows build: ${asset['name']}');
+        developer.log('Found official Windows build: ${asset['name']}', name: 'UpdateInfo');
         return asset;
       }
     }
@@ -71,7 +72,7 @@ class UpdateInfo {
       if (name.contains('windows') && 
           (name.contains('x86_64') || name.contains('amd64')) &&
           (name.endsWith('.7z') || name.endsWith('.zip'))) {
-        print('Found Windows x86_64/amd64 build: ${asset['name']}');
+        developer.log('Found Windows x86_64/amd64 build: ${asset['name']}', name: 'UpdateInfo');
         return asset;
       }
     }
@@ -81,12 +82,12 @@ class UpdateInfo {
       if (name.contains('windows') && 
           !name.contains('arm64') && !name.contains('aarch64') &&
           (name.endsWith('.7z') || name.endsWith('.zip'))) {
-        print('Found generic Windows build: ${asset['name']}');
+        developer.log('Found generic Windows build: ${asset['name']}', name: 'UpdateInfo');
         return asset;
       }
     }
     
-    print('No suitable Windows build found');
+    developer.log('No suitable Windows build found', name: 'UpdateInfo');
     return null;
   }
 

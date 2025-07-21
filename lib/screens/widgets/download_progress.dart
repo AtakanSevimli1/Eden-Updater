@@ -40,8 +40,8 @@ class DownloadProgress extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
               colors: [
-                theme.colorScheme.primary.withOpacity(0.1),
-                theme.colorScheme.secondary.withOpacity(0.1),
+                theme.colorScheme.primary.withValues(alpha: 0.1),
+                theme.colorScheme.secondary.withValues(alpha: 0.1),
               ],
             ),
           ),
@@ -68,7 +68,7 @@ class DownloadProgress extends StatelessWidget {
         Text(
           statusMessage,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.8),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
           ),
           textAlign: TextAlign.center,
         ),

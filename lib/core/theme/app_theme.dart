@@ -29,7 +29,7 @@ class AppTheme {
         
         surface: _surfaceColor,
         onSurface: _onSurfaceColor,
-        surfaceVariant: _surfaceVariantColor,
+        surfaceContainerHighest: _surfaceVariantColor,
         onSurfaceVariant: Color(0xFFD4D4FF),
         
         tertiary: _tertiaryColor,
@@ -37,9 +37,6 @@ class AppTheme {
         
         error: _errorColor,
         onError: Colors.white,
-        
-        background: _backgroundColor,
-        onBackground: _onSurfaceColor,
         
         outline: _outlineColor,
         outlineVariant: _outlineVariantColor,
@@ -60,7 +57,7 @@ class AppTheme {
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: AppConstants.buttonElevation,
-        shadowColor: _primaryColor.withOpacity(0.4),
+        shadowColor: _primaryColor.withValues(alpha: 0.4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
         ),
@@ -75,7 +72,7 @@ class AppTheme {
         backgroundColor: _secondaryColor,
         foregroundColor: Colors.white,
         elevation: AppConstants.buttonElevation,
-        shadowColor: _secondaryColor.withOpacity(0.4),
+        shadowColor: _secondaryColor.withValues(alpha: 0.4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
         ),

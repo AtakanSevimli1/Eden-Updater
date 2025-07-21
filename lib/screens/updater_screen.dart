@@ -217,9 +217,9 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.background,
               theme.colorScheme.surface,
-              theme.colorScheme.primary.withOpacity(0.1),
+              theme.colorScheme.surface,
+              theme.colorScheme.primary.withValues(alpha: 0.1),
             ],
             stops: const [0.0, 0.7, 1.0],
           ),
@@ -269,7 +269,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                               color: theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: theme.colorScheme.outline.withOpacity(0.2),
+                                color: theme.colorScheme.outline.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Column(
@@ -309,7 +309,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                           Text(
                             _statusMessage,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.8),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -334,9 +334,9 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.background,
               theme.colorScheme.surface,
-              theme.colorScheme.primary.withOpacity(0.1),
+              theme.colorScheme.surface,
+              theme.colorScheme.primary.withValues(alpha: 0.1),
             ],
             stops: const [0.0, 0.7, 1.0],
           ),
@@ -360,7 +360,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -383,7 +383,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
               if (_isDownloading) ...[
                 LinearProgressIndicator(
                   value: _downloadProgress,
-                  backgroundColor: theme.colorScheme.surfaceVariant,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -398,7 +398,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
               Text(
                 _statusMessage,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),

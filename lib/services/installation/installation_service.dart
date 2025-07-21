@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:process_run/process_run.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/file_utils.dart';
 import '../storage/preferences_service.dart';
