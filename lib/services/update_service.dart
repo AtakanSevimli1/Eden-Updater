@@ -16,6 +16,7 @@ class UpdateService {
   static const String _installPathKey = 'install_path';
   static const String _releaseChannelKey = 'release_channel';
   static const String _edenExecutableKey = 'eden_executable_path';
+  static const String _createShortcutsKey = 'create_shortcuts';
   
   static const String stableChannel = 'stable';
   static const String nightlyChannel = 'nightly';
@@ -122,8 +123,19 @@ class UpdateService {
     await prefs.setString(_releaseChannelKey, channel);
   }
 
+  Future<bool> getCreateShortcutsPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_createShortcutsKey) ?? true; // Default to true
+  }
+
+  Future<void> setCreateShortcutsPreference(bool createShortcuts) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_createShortcutsKey, createShortcuts);
+  }
+
   Future<void> downloadUpdate(
     UpdateInfo updateInfo, {
+    bool createShortcuts = true,
     required Function(double) onProgress,
     required Function(String) onStatusUpdate,
   }) async {
@@ -176,10 +188,12 @@ class UpdateService {
       
       await _updateCurrentVersion(updateInfo.version);
       
-      // Create shortcut on first installation
-      final currentVersion = await getCurrentVersion();
-      if (currentVersion?.version != 'Not installed') {
-        await _createEdenShortcut();
+      // Create shortcut if requested
+      if (createShortcuts) {
+        final currentVersion = await getCurrentVersion();
+        if (currentVersion?.version != 'Not installed') {
+          await _createEdenShortcut();
+        }
       }
       
       onStatusUpdate('Installation complete!');

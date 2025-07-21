@@ -30,6 +30,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   String _statusMessage = 'Ready to check for updates';
   String _releaseChannel = UpdateService.stableChannel;
   bool _autoLaunchInProgress = false;
+  bool _createShortcuts = true;
 
   @override
   void initState() {
@@ -88,8 +89,10 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
 
   Future<void> _loadReleaseChannel() async {
     final channel = await _updateService.getReleaseChannel();
+    final createShortcuts = await _updateService.getCreateShortcutsPreference();
     setState(() {
       _releaseChannel = channel;
+      _createShortcuts = createShortcuts;
     });
   }
 
@@ -173,6 +176,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     try {
       await _updateService.downloadUpdate(
         _latestVersion!,
+        createShortcuts: _createShortcuts,
         onProgress: (progress) {
           setState(() {
             _downloadProgress = progress;
@@ -342,8 +346,16 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -789,8 +801,67 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                   ),
                 ),
                 
-                const Spacer(),
+                const Expanded(child: SizedBox()),
                 
+                // Installation Options
+                if (isNotInstalled || hasUpdate) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.settings,
+                          color: theme.colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Installation Options',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
+                              value: _createShortcuts,
+                              onChanged: _isDownloading ? null : (value) async {
+                                setState(() {
+                                  _createShortcuts = value ?? true;
+                                });
+                                await _updateService.setCreateShortcutsPreference(_createShortcuts);
+                              },
+                              activeColor: theme.colorScheme.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Create desktop shortcut',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                
+                // Action Buttons - Nintendo Switch Joy-Con style
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -952,7 +1023,12 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                     ],
                   ),
                 ),
-              ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
