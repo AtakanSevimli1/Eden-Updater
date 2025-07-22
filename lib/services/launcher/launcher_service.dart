@@ -43,7 +43,7 @@ class LauncherService {
     }
   }
   
-  /// Create a desktop shortcut for Eden (Windows only)
+  /// Create a desktop shortcut for Eden Updater with auto-launch (Windows only)
   Future<void> createDesktopShortcut() async {
     if (!Platform.isWindows) return;
     
@@ -52,10 +52,11 @@ class LauncherService {
       final channelName = channel == 'nightly' ? 'Nightly' : 'Stable';
       final shortcutName = 'Eden $channelName.lnk';
       
-      final edenExecutable = await _preferencesService.getEdenExecutablePath(channel);
-      if (edenExecutable == null || !await File(edenExecutable).exists()) {
+      // Get the updater executable path (current executable)
+      final updaterExecutable = Platform.resolvedExecutable;
+      if (!await File(updaterExecutable).exists()) {
         throw LauncherException(
-          'Eden executable not found',
+          'Updater executable not found',
           'Cannot create shortcut without valid executable'
         );
       }
@@ -73,13 +74,14 @@ class LauncherService {
       final desktopPath = result.stdout.toString().trim();
       final shortcutPath = path.join(desktopPath, shortcutName);
       
-      // Create PowerShell script to create shortcut
+      // Create PowerShell script to create shortcut with auto-launch and channel arguments
       final powershellScript = '''
 \$WshShell = New-Object -comObject WScript.Shell
 \$Shortcut = \$WshShell.CreateShortcut("$shortcutPath")
-\$Shortcut.TargetPath = "$edenExecutable"
-\$Shortcut.WorkingDirectory = "${path.dirname(edenExecutable)}"
-\$Shortcut.IconLocation = "$edenExecutable"
+\$Shortcut.TargetPath = "$updaterExecutable"
+\$Shortcut.Arguments = "--auto-launch --channel $channel"
+\$Shortcut.WorkingDirectory = "${path.dirname(updaterExecutable)}"
+\$Shortcut.IconLocation = "$updaterExecutable"
 \$Shortcut.Description = "Eden $channelName Emulator"
 \$Shortcut.Save()
 ''';
