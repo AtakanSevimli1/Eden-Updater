@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 /// Widget for displaying download progress
 class DownloadProgress extends StatelessWidget {
   final double progress;
-  final String statusMessage;
   
   const DownloadProgress({
     super.key,
     required this.progress,
-    required this.statusMessage,
   });
 
   @override
@@ -65,13 +63,7 @@ class DownloadProgress extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          statusMessage,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-          ),
-          textAlign: TextAlign.center,
-        ),
+
       ],
     );
   }

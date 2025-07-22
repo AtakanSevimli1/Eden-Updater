@@ -33,7 +33,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   bool _isChecking = false;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
-  String _statusMessage = 'Ready to check for updates';
+
   String _releaseChannel = AppConstants.stableChannel;
   bool _autoLaunchInProgress = false;
   bool _createShortcuts = true;
@@ -63,7 +63,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
 
   Future<void> _autoLaunchSequence() async {
     setState(() {
-      _statusMessage = 'Auto-launching Eden...';
     });
     
     // Check for updates
@@ -74,7 +73,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
         _currentVersion != null && 
         _latestVersion!.version != _currentVersion!.version) {
       setState(() {
-        _statusMessage = 'Update found, downloading automatically...';
       });
       await _downloadUpdate();
     }
@@ -103,7 +101,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   Future<void> _checkForUpdates() async {
     setState(() {
       _isChecking = true;
-      _statusMessage = 'Checking for updates...';
     });
 
     try {
@@ -112,17 +109,13 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
         _latestVersion = latest;
         _isChecking = false;
         if (_currentVersion?.version == 'Not installed') {
-          _statusMessage = 'Ready to install Eden ${latest.version}';
         } else if (_currentVersion != null && latest.version != _currentVersion!.version) {
-          _statusMessage = 'Update available: ${latest.version}';
         } else {
-          _statusMessage = 'Eden is up to date';
         }
       });
     } catch (e) {
       setState(() {
         _isChecking = false;
-        _statusMessage = 'Failed to check for updates: $e';
       });
     }
   }
@@ -132,7 +125,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     setState(() {
       _releaseChannel = newChannel;
       _latestVersion = null;
-      _statusMessage = 'Release channel changed to ${newChannel == AppConstants.nightlyChannel ? 'Nightly' : 'Stable'}';
     });
     
     await _loadCurrentVersion();
@@ -144,7 +136,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0.0;
-      _statusMessage = 'Starting download...';
     });
 
     try {
@@ -158,20 +149,17 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
         },
         onStatusUpdate: (status) {
           setState(() {
-            _statusMessage = status;
           });
         },
       );
 
       setState(() {
         _isDownloading = false;
-        _statusMessage = 'Installation complete!';
         _currentVersion = _latestVersion;
       });
     } catch (e) {
       setState(() {
         _isDownloading = false;
-        _statusMessage = 'Installation failed: $e';
       });
     }
   }
@@ -188,7 +176,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
       }
     } catch (e) {
       setState(() {
-        _statusMessage = 'Failed to launch Eden: $e';
       });
     }
   }
@@ -197,7 +184,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     await _updateService.setCurrentVersionForTesting('v1.0.0-test');
     await _loadCurrentVersion();
     setState(() {
-      _statusMessage = 'Set test version v1.0.0-test';
     });
   }
 
@@ -277,7 +263,6 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                                 if (_isDownloading) ...[
                                   DownloadProgress(
                                     progress: _downloadProgress,
-                                    statusMessage: _statusMessage,
                                   ),
                                   const SizedBox(height: 24),
                                 ],
@@ -306,13 +291,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                           
                           const Spacer(),
                           
-                          Text(
-                            _statusMessage,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+
                         ],
                       ),
                     ),
@@ -395,13 +374,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
               ],
-              Text(
-                _statusMessage,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                ),
-                textAlign: TextAlign.center,
-              ),
+
             ],
           ),
         ),

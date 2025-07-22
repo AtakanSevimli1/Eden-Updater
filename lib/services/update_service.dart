@@ -116,7 +116,6 @@ class UpdateService {
       );
 
       // Extract the archive
-      onStatusUpdate('Extracting...');
       await _extractionService.extractArchive(
         filePath,
         installPath,
@@ -144,8 +143,14 @@ class UpdateService {
         }
       }
 
+      // Clean up downloaded archive file
+      try {
+        await File(filePath).delete();
+      } catch (e) {
+        // Don't fail if cleanup fails
+      }
+
       onProgress(1.0);
-      onStatusUpdate('Installation complete!');
       
     } catch (e) {
       if (e is AppException) {

@@ -55,49 +55,51 @@ class ActionButtons extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         
-        // Action buttons
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: isChecking || isDownloading ? null : onCheckForUpdates,
-                icon: isChecking 
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            theme.colorScheme.onPrimary,
+        // Action buttons - hide during installation
+        if (!isDownloading) ...[
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: isChecking ? null : onCheckForUpdates,
+                  icon: isChecking 
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              theme.colorScheme.onPrimary,
+                            ),
                           ),
-                        ),
-                      )
-                    : const Icon(Icons.refresh),
-                label: Text(isChecking ? 'Checking...' : 'Check for Updates'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            if (isNotInstalled || hasUpdate) ...[
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: isChecking || isDownloading || latestVersion == null 
-                      ? null 
-                      : onDownloadUpdate,
-                  icon: const Icon(Icons.download),
-                  label: Text(isNotInstalled ? 'Install Eden' : 'Update Eden'),
+                        )
+                      : const Icon(Icons.refresh),
+                  label: Text(isChecking ? 'Checking...' : 'Check for Updates'),
                 ),
               ),
-            ] else ...[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: isChecking || isDownloading ? null : onLaunchEden,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Launch Eden'),
+              const SizedBox(width: 12),
+              if (isNotInstalled || hasUpdate) ...[
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: isChecking || latestVersion == null 
+                        ? null 
+                        : onDownloadUpdate,
+                    icon: const Icon(Icons.download),
+                    label: Text(isNotInstalled ? 'Install Eden' : 'Update Eden'),
+                  ),
                 ),
-              ),
+              ] else ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isChecking ? null : onLaunchEden,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Launch Eden'),
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
+          ),
+        ],
       ],
     );
   }
