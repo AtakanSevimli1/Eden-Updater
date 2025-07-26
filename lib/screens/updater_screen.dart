@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/enums/app_enums.dart';
 import 'controllers/updater_controller.dart';
 import 'widgets/app_header.dart';
 import 'widgets/channel_selector.dart';
@@ -112,18 +113,19 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   
   Widget _buildHeader(state) {
     return AppHeader(
-      releaseChannel: state.releaseChannel,
+      releaseChannel: state.releaseChannel.value,
       onTestVersion: () => _controller.setTestVersion('v1.0.0-test'),
     );
   }
   
   Widget _buildChannelSelector(state) {
     return ChannelSelector(
-      selectedChannel: state.releaseChannel,
+      selectedChannel: state.releaseChannel.value,
       isEnabled: !state.isOperationInProgress,
       onChannelChanged: (value) {
         if (value != null) {
-          _controller.changeReleaseChannel(value);
+          final channel = ReleaseChannel.fromString(value);
+          _controller.changeReleaseChannel(channel);
         }
       },
     );
@@ -173,10 +175,10 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
             isDownloading: state.isDownloading,
             isNotInstalled: state.isNotInstalled,
             hasUpdate: state.hasUpdate,
-            canDownload: !state.isChecking && state.latestVersion != null,
+            canDownload: state.canStartOperation && state.latestVersion != null,
             onCheckForUpdates: () => _handleCheckForUpdates(context),
             onDownloadUpdate: state.latestVersion != null ? _handleDownloadUpdate : null,
-            onLaunchEden: !state.isChecking ? _controller.launchEden : null,
+            onLaunchEden: state.canStartOperation ? _controller.launchEden : null,
           ),
         ],
       ),

@@ -23,6 +23,7 @@ class UpdateService {
   // Session cache for latest versions to avoid redundant API calls
   final Map<String, UpdateInfo> _sessionCache = {};
   
+  /// Default constructor (creates all dependencies)
   UpdateService()
       : _githubService = GitHubApiService(),
         _preferencesService = PreferencesService(),
@@ -30,6 +31,16 @@ class UpdateService {
         _extractionService = ExtractionService(),
         _installationService = InstallationService(PreferencesService()),
         _launcherService = LauncherService(PreferencesService(), InstallationService(PreferencesService()));
+  
+  /// Constructor with dependency injection (for better testing and service locator)
+  UpdateService.withServices(
+    this._githubService,
+    this._preferencesService,
+    this._downloadService,
+    this._extractionService,
+    this._installationService,
+    this._launcherService,
+  );
 
   // Channel management
   Future<String> getReleaseChannel() => _preferencesService.getReleaseChannel();

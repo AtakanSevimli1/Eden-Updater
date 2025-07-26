@@ -1,63 +1,99 @@
-import '../../core/constants/app_constants.dart';
+import '../../core/config/app_config.dart';
+import '../../core/enums/app_enums.dart';
 import '../../models/update_info.dart';
 
-/// Manages the state of the updater screen
+/// Immutable state class for the updater screen
 class UpdaterState {
   // Version information
-  UpdateInfo? currentVersion;
-  UpdateInfo? latestVersion;
+  final UpdateInfo? currentVersion;
+  final UpdateInfo? latestVersion;
   
   // Operation states
-  bool isChecking = false;
-  bool isDownloading = false;
-  double downloadProgress = 0.0;
+  final UpdateStatus status;
+  final double downloadProgress;
   
   // Settings
-  String releaseChannel = AppConstants.stableChannel;
-  bool createShortcuts = true;
-  bool portableMode = false;
+  final ReleaseChannel releaseChannel;
+  final bool createShortcuts;
+  final bool portableMode;
   
   // Auto-launch state
-  bool autoLaunchInProgress = false;
+  final bool autoLaunchInProgress;
+  
+  const UpdaterState({
+    this.currentVersion,
+    this.latestVersion,
+    this.status = UpdateStatus.idle,
+    this.downloadProgress = 0.0,
+    this.releaseChannel = ReleaseChannel.stable,
+    this.createShortcuts = AppConfig.defaultCreateShortcuts,
+    this.portableMode = false, // Always false by default
+    this.autoLaunchInProgress = false,
+  });
+  
+  /// Computed properties for better readability
   
   /// Check if an update is available
   bool get hasUpdate {
     return latestVersion != null && 
            currentVersion != null && 
-           latestVersion!.version != currentVersion!.version;
+           latestVersion!.isDifferentFrom(currentVersion);
   }
   
   /// Check if Eden is not installed
   bool get isNotInstalled {
-    return currentVersion?.version == 'Not installed';
+    return currentVersion?.isInstalled != true;
   }
   
   /// Check if any operation is in progress
-  bool get isOperationInProgress {
-    return isChecking || isDownloading;
+  bool get isOperationInProgress => status.isInProgress;
+  
+  /// Check if currently checking for updates
+  bool get isChecking => status == UpdateStatus.checking;
+  
+  /// Check if currently downloading
+  bool get isDownloading => status == UpdateStatus.downloading;
+  
+  /// Check if can start a new operation
+  bool get canStartOperation => status.canStartOperation;
+  
+  /// Get installation status
+  InstallationStatus get installationStatus {
+    if (isNotInstalled) return InstallationStatus.notInstalled;
+    if (hasUpdate) return InstallationStatus.updateAvailable;
+    return InstallationStatus.installed;
   }
   
   /// Create a copy of the state with updated values
   UpdaterState copyWith({
     UpdateInfo? currentVersion,
     UpdateInfo? latestVersion,
-    bool? isChecking,
-    bool? isDownloading,
+    UpdateStatus? status,
     double? downloadProgress,
-    String? releaseChannel,
+    ReleaseChannel? releaseChannel,
     bool? createShortcuts,
     bool? portableMode,
     bool? autoLaunchInProgress,
   }) {
-    return UpdaterState()
-      ..currentVersion = currentVersion ?? this.currentVersion
-      ..latestVersion = latestVersion ?? this.latestVersion
-      ..isChecking = isChecking ?? this.isChecking
-      ..isDownloading = isDownloading ?? this.isDownloading
-      ..downloadProgress = downloadProgress ?? this.downloadProgress
-      ..releaseChannel = releaseChannel ?? this.releaseChannel
-      ..createShortcuts = createShortcuts ?? this.createShortcuts
-      ..portableMode = portableMode ?? this.portableMode
-      ..autoLaunchInProgress = autoLaunchInProgress ?? this.autoLaunchInProgress;
+    return UpdaterState(
+      currentVersion: currentVersion ?? this.currentVersion,
+      latestVersion: latestVersion ?? this.latestVersion,
+      status: status ?? this.status,
+      downloadProgress: downloadProgress ?? this.downloadProgress,
+      releaseChannel: releaseChannel ?? this.releaseChannel,
+      createShortcuts: createShortcuts ?? this.createShortcuts,
+      portableMode: portableMode ?? this.portableMode,
+      autoLaunchInProgress: autoLaunchInProgress ?? this.autoLaunchInProgress,
+    );
+  }
+  
+  @override
+  String toString() {
+    return 'UpdaterState('
+        'status: $status, '
+        'channel: ${releaseChannel.displayName}, '
+        'hasUpdate: $hasUpdate, '
+        'isNotInstalled: $isNotInstalled'
+        ')';
   }
 }

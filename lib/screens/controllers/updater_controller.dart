@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import '../../core/enums/app_enums.dart';
 import '../../services/update_service.dart';
 import '../state/updater_state.dart';
 
@@ -31,7 +32,8 @@ class UpdaterController {
   
   /// Load user settings
   Future<void> _loadSettings() async {
-    final channel = await _updateService.getReleaseChannel();
+    final channelString = await _updateService.getReleaseChannel();
+    final channel = ReleaseChannel.fromString(channelString);
     final createShortcuts = await _updateService.getCreateShortcutsPreference();
     // Always set portable mode to false on startup (don't persist this setting)
     
@@ -44,26 +46,26 @@ class UpdaterController {
   
   /// Check for updates
   Future<void> checkForUpdates({bool forceRefresh = false}) async {
-    _updateState(_state.copyWith(isChecking: true));
+    _updateState(_state.copyWith(status: UpdateStatus.checking));
     
     try {
       final latest = await _updateService.getLatestVersion(
-        channel: _state.releaseChannel,
+        channel: _state.releaseChannel.value,
         forceRefresh: forceRefresh,
       );
       _updateState(_state.copyWith(
         latestVersion: latest,
-        isChecking: false,
+        status: UpdateStatus.idle,
       ));
     } catch (e) {
-      _updateState(_state.copyWith(isChecking: false));
+      _updateState(_state.copyWith(status: UpdateStatus.failed));
       rethrow; // Let the UI handle the error display
     }
   }
   
   /// Change release channel
-  Future<void> changeReleaseChannel(String newChannel) async {
-    await _updateService.setReleaseChannel(newChannel);
+  Future<void> changeReleaseChannel(ReleaseChannel newChannel) async {
+    await _updateService.setReleaseChannel(newChannel.value);
     _updateState(_state.copyWith(
       releaseChannel: newChannel,
       latestVersion: null,
@@ -78,7 +80,7 @@ class UpdaterController {
     if (_state.latestVersion == null) return;
     
     _updateState(_state.copyWith(
-      isDownloading: true,
+      status: UpdateStatus.downloading,
       downloadProgress: 0.0,
     ));
     
@@ -88,7 +90,16 @@ class UpdaterController {
         createShortcuts: _state.createShortcuts,
         portableMode: _state.portableMode,
         onProgress: (progress) {
-          _updateState(_state.copyWith(downloadProgress: progress));
+          final status = progress < 0.5 
+              ? UpdateStatus.downloading 
+              : progress < 0.95 
+                  ? UpdateStatus.extracting 
+                  : UpdateStatus.installing;
+          
+          _updateState(_state.copyWith(
+            status: status,
+            downloadProgress: progress,
+          ));
         },
         onStatusUpdate: (status) {
           // Status updates can be handled by the UI if needed
@@ -96,11 +107,11 @@ class UpdaterController {
       );
       
       _updateState(_state.copyWith(
-        isDownloading: false,
+        status: UpdateStatus.completed,
         currentVersion: _state.latestVersion,
       ));
     } catch (e) {
-      _updateState(_state.copyWith(isDownloading: false));
+      _updateState(_state.copyWith(status: UpdateStatus.failed));
       rethrow;
     }
   }
