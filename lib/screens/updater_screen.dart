@@ -37,6 +37,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   String _releaseChannel = AppConstants.stableChannel;
   bool _autoLaunchInProgress = false;
   bool _createShortcuts = true;
+  bool _portableMode = false;
 
   @override
   void initState() {
@@ -92,9 +93,11 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
   Future<void> _loadSettings() async {
     final channel = await _updateService.getReleaseChannel();
     final createShortcuts = await _updateService.getCreateShortcutsPreference();
+    final portableMode = await _updateService.getPortableModePreference();
     setState(() {
       _releaseChannel = channel;
       _createShortcuts = createShortcuts;
+      _portableMode = portableMode;
     });
   }
 
@@ -152,6 +155,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
       await _updateService.downloadUpdate(
         _latestVersion!,
         createShortcuts: _createShortcuts,
+        portableMode: _portableMode,
         onProgress: (progress) {
           setState(() {
             _downloadProgress = progress;
@@ -283,6 +287,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                                   isChecking: _isChecking,
                                   isDownloading: _isDownloading,
                                   createShortcuts: _createShortcuts,
+                                  portableMode: _portableMode,
                                   onCheckForUpdates: (forceRefresh) => _checkForUpdates(forceRefresh: forceRefresh),
                                   onDownloadUpdate: _downloadUpdate,
                                   onLaunchEden: _launchEden,
@@ -292,6 +297,14 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                                         _createShortcuts = value;
                                       });
                                       _updateService.setCreateShortcutsPreference(value);
+                                    }
+                                  },
+                                  onPortableModeChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        _portableMode = value;
+                                      });
+                                      _updateService.setPortableModePreference(value);
                                     }
                                   },
                                 ),

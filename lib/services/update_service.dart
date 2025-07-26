@@ -39,6 +39,11 @@ class UpdateService {
   Future<bool> getCreateShortcutsPreference() => _preferencesService.getCreateShortcutsPreference();
   Future<void> setCreateShortcutsPreference(bool value) => _preferencesService.setCreateShortcutsPreference(value);
   
+  // Portable mode preference
+  Future<bool> getPortableModePreference() => _preferencesService.getPortableModePreference();
+  Future<void> setPortableModePreference(bool value) => _preferencesService.setPortableModePreference(value);
+  Future<void> clearPortableModePreference() => _preferencesService.clearPortableModePreference();
+  
   // Cache management
   void clearSessionCache() => _sessionCache.clear();
   void clearChannelCache(String channel) => _sessionCache.remove(channel);
@@ -115,6 +120,7 @@ class UpdateService {
   Future<void> downloadUpdate(
     UpdateInfo updateInfo, {
     bool createShortcuts = true,
+    bool portableMode = false,
     required Function(double) onProgress,
     required Function(String) onStatusUpdate,
   }) async {
@@ -150,6 +156,14 @@ class UpdateService {
       // Update version info
       final channel = await getReleaseChannel();
       await _preferencesService.setCurrentVersion(channel, updateInfo.version);
+
+      // Create user folder for portable mode in the channel-specific folder
+      if (portableMode) {
+        onStatusUpdate('Setting up portable mode...');
+        final channelInstallPath = await _installationService.getChannelInstallPath();
+        final userPath = path.join(channelInstallPath, 'user');
+        await Directory(userPath).create(recursive: true);
+      }
 
       // Create shortcut if requested
       if (createShortcuts) {

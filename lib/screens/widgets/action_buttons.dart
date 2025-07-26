@@ -22,10 +22,12 @@ class ActionButtons extends StatelessWidget {
     required this.isChecking,
     required this.isDownloading,
     required this.createShortcuts,
+    required this.portableMode,
     required this.onCheckForUpdates,
     required this.onDownloadUpdate,
     required this.onLaunchEden,
     required this.onCreateShortcutsChanged,
+    required this.onPortableModeChanged,
   });
 
   @override
@@ -50,6 +52,25 @@ class ActionButtons extends StatelessWidget {
             Expanded(
               child: Text(
                 'Create desktop shortcut',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // Portable mode checkbox
+        Row(
+          children: [
+            Checkbox(
+              value: portableMode,
+              onChanged: isDownloading ? null : onPortableModeChanged,
+              activeColor: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Portable mode (keep user data in installation folder)',
                 style: theme.textTheme.bodyMedium,
               ),
             ),
