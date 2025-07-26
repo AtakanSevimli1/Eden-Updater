@@ -8,10 +8,12 @@ class ActionButtons extends StatelessWidget {
   final bool isChecking;
   final bool isDownloading;
   final bool createShortcuts;
-  final VoidCallback onCheckForUpdates;
+  final bool portableMode;
+  final Function(bool forceRefresh) onCheckForUpdates;
   final VoidCallback onDownloadUpdate;
   final VoidCallback onLaunchEden;
   final ValueChanged<bool?> onCreateShortcutsChanged;
+  final ValueChanged<bool?> onPortableModeChanged;
   
   const ActionButtons({
     super.key,
@@ -61,7 +63,7 @@ class ActionButtons extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: isChecking ? null : onCheckForUpdates,
+                  onPressed: isChecking ? null : () => onCheckForUpdates(true),
                   icon: isChecking 
                       ? SizedBox(
                           width: 16,

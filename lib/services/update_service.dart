@@ -20,6 +20,9 @@ class UpdateService {
   final InstallationService _installationService;
   final LauncherService _launcherService;
   
+  // Session cache for latest versions to avoid redundant API calls
+  final Map<String, UpdateInfo> _sessionCache = {};
+  
   UpdateService()
       : _githubService = GitHubApiService(),
         _preferencesService = PreferencesService(),
@@ -35,6 +38,10 @@ class UpdateService {
   // Shortcuts preference
   Future<bool> getCreateShortcutsPreference() => _preferencesService.getCreateShortcutsPreference();
   Future<void> setCreateShortcutsPreference(bool value) => _preferencesService.setCreateShortcutsPreference(value);
+  
+  // Cache management
+  void clearSessionCache() => _sessionCache.clear();
+  void clearChannelCache(String channel) => _sessionCache.remove(channel);
 
   /// Get the current installed version
   Future<UpdateInfo?> getCurrentVersion() async {
@@ -89,9 +96,19 @@ class UpdateService {
   }
 
   /// Get the latest version from GitHub
-  Future<UpdateInfo> getLatestVersion({String? channel}) async {
+  Future<UpdateInfo> getLatestVersion({String? channel, bool forceRefresh = false}) async {
     final releaseChannel = channel ?? await getReleaseChannel();
-    return await _githubService.getLatestRelease(releaseChannel);
+    
+    // Check session cache first unless force refresh is requested
+    if (!forceRefresh && _sessionCache.containsKey(releaseChannel)) {
+      return _sessionCache[releaseChannel]!;
+    }
+    
+    // Fetch from API and cache the result
+    final updateInfo = await _githubService.getLatestRelease(releaseChannel);
+    _sessionCache[releaseChannel] = updateInfo;
+    
+    return updateInfo;
   }
 
   /// Download and install an update

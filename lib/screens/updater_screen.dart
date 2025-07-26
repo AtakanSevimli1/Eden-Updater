@@ -57,7 +57,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
       _autoLaunchInProgress = true;
       await _autoLaunchSequence();
     } else {
-      _checkForUpdates();
+      _checkForUpdates(forceRefresh: false);
     }
   }
 
@@ -66,7 +66,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     });
     
     // Check for updates
-    await _checkForUpdates();
+    await _checkForUpdates(forceRefresh: false);
     
     // If update is available, download it automatically
     if (_latestVersion != null && 
@@ -98,25 +98,33 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     });
   }
 
-  Future<void> _checkForUpdates() async {
+  Future<void> _checkForUpdates({bool forceRefresh = false}) async {
     setState(() {
       _isChecking = true;
     });
 
     try {
-      final latest = await _updateService.getLatestVersion(channel: _releaseChannel);
+      final latest = await _updateService.getLatestVersion(
+        channel: _releaseChannel,
+        forceRefresh: forceRefresh,
+      );
       setState(() {
         _latestVersion = latest;
         _isChecking = false;
-        if (_currentVersion?.version == 'Not installed') {
-        } else if (_currentVersion != null && latest.version != _currentVersion!.version) {
-        } else {
-        }
       });
     } catch (e) {
       setState(() {
         _isChecking = false;
       });
+      // Show error message to user if needed
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to check for updates: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
@@ -128,6 +136,8 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     });
     
     await _loadCurrentVersion();
+    // Automatically check for updates when switching channels (use cache if available)
+    await _checkForUpdates(forceRefresh: false);
   }
 
   Future<void> _downloadUpdate() async {
@@ -273,7 +283,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                                   isChecking: _isChecking,
                                   isDownloading: _isDownloading,
                                   createShortcuts: _createShortcuts,
-                                  onCheckForUpdates: _checkForUpdates,
+                                  onCheckForUpdates: (forceRefresh) => _checkForUpdates(forceRefresh: forceRefresh),
                                   onDownloadUpdate: _downloadUpdate,
                                   onLaunchEden: _launchEden,
                                   onCreateShortcutsChanged: (value) {
