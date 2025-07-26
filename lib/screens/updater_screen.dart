@@ -1,16 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../core/constants/app_constants.dart';
-import '../models/update_info.dart';
-import '../services/update_service.dart';
+import 'controllers/updater_controller.dart';
 import 'widgets/app_header.dart';
 import 'widgets/channel_selector.dart';
 import 'widgets/version_cards.dart';
 import 'widgets/download_progress.dart';
 import 'widgets/action_buttons.dart';
+import 'widgets/settings_section.dart';
+import 'widgets/auto_launch_ui.dart';
 
-/// Main updater screen with improved modular structure
+/// Main updater screen with clean, modular architecture
 class UpdaterScreen extends StatefulWidget {
   final bool isAutoLaunch;
   final String? channel;
@@ -26,382 +24,200 @@ class UpdaterScreen extends StatefulWidget {
 }
 
 class _UpdaterScreenState extends State<UpdaterScreen> {
-  final UpdateService _updateService = UpdateService();
-  
-  UpdateInfo? _currentVersion;
-  UpdateInfo? _latestVersion;
-  bool _isChecking = false;
-  bool _isDownloading = false;
-  double _downloadProgress = 0.0;
-
-  String _releaseChannel = AppConstants.stableChannel;
-  bool _autoLaunchInProgress = false;
-  bool _createShortcuts = true;
-  bool _portableMode = false;
+  late UpdaterController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = UpdaterController(onStateChanged: () => setState(() {}));
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
-    // Set channel if provided via command line
-    if (widget.channel != null) {
-      await _updateService.setReleaseChannel(widget.channel!);
-    }
-    
-    await _loadCurrentVersion();
-    await _loadSettings();
+    await _controller.initialize(channel: widget.channel);
     
     if (widget.isAutoLaunch) {
-      _autoLaunchInProgress = true;
-      await _autoLaunchSequence();
+      await _controller.performAutoLaunchSequence();
     } else {
-      _checkForUpdates(forceRefresh: false);
+      await _controller.checkForUpdates();
     }
   }
 
-  Future<void> _autoLaunchSequence() async {
-    setState(() {
-    });
+  @override
+  Widget build(BuildContext context) {
+    final state = _controller.state;
     
-    // Check for updates
-    await _checkForUpdates(forceRefresh: false);
-    
-    // If update is available, download it automatically
-    if (_latestVersion != null && 
-        _currentVersion != null && 
-        _latestVersion!.version != _currentVersion!.version) {
-      setState(() {
-      });
-      await _downloadUpdate();
-    }
-    
-    // Launch Eden
-    await Future.delayed(const Duration(milliseconds: 500));
-    await _launchEden();
-  }
-
-  Future<void> _loadCurrentVersion() async {
-    final current = await _updateService.getCurrentVersion();
-    setState(() {
-      _currentVersion = current;
-    });
-  }
-
-  Future<void> _loadSettings() async {
-    final channel = await _updateService.getReleaseChannel();
-    final createShortcuts = await _updateService.getCreateShortcutsPreference();
-    final portableMode = await _updateService.getPortableModePreference();
-    setState(() {
-      _releaseChannel = channel;
-      _createShortcuts = createShortcuts;
-      _portableMode = portableMode;
-    });
-  }
-
-  Future<void> _checkForUpdates({bool forceRefresh = false}) async {
-    setState(() {
-      _isChecking = true;
-    });
-
-    try {
-      final latest = await _updateService.getLatestVersion(
-        channel: _releaseChannel,
-        forceRefresh: forceRefresh,
+    // Show auto-launch UI if in auto-launch mode
+    if (widget.isAutoLaunch && state.autoLaunchInProgress) {
+      return AutoLaunchUI(
+        isDownloading: state.isDownloading,
+        downloadProgress: state.downloadProgress,
       );
-      setState(() {
-        _latestVersion = latest;
-        _isChecking = false;
-      });
+    }
+
+    return Scaffold(
+      body: Container(
+        decoration: _buildBackgroundGradient(context),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: _buildMainContent(context, state),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  BoxDecoration _buildBackgroundGradient(BuildContext context) {
+    final theme = Theme.of(context);
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          theme.colorScheme.surface,
+          theme.colorScheme.surface,
+          theme.colorScheme.primary.withValues(alpha: 0.1),
+        ],
+        stops: const [0.0, 0.7, 1.0],
+      ),
+    );
+  }
+  
+  Widget _buildMainContent(BuildContext context, state) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  _buildHeader(state),
+                  const SizedBox(height: 24),
+                  _buildChannelSelector(state),
+                  const SizedBox(height: 24),
+                  _buildVersionCards(state),
+                  const SizedBox(height: 24),
+                  _buildActionsSection(context, state),
+                  const Spacer(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  Widget _buildHeader(state) {
+    return AppHeader(
+      releaseChannel: state.releaseChannel,
+      onTestVersion: () => _controller.setTestVersion('v1.0.0-test'),
+    );
+  }
+  
+  Widget _buildChannelSelector(state) {
+    return ChannelSelector(
+      selectedChannel: state.releaseChannel,
+      isEnabled: !state.isOperationInProgress,
+      onChannelChanged: (value) {
+        if (value != null) {
+          _controller.changeReleaseChannel(value);
+        }
+      },
+    );
+  }
+  
+  Widget _buildVersionCards(state) {
+    return VersionCards(
+      currentVersion: state.currentVersion,
+      latestVersion: state.latestVersion,
+    );
+  }
+  
+  Widget _buildActionsSection(BuildContext context, state) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Download progress (shown during download)
+          if (state.isDownloading) ...[
+            DownloadProgress(progress: state.downloadProgress),
+            const SizedBox(height: 24),
+          ],
+          
+          // Settings section
+          SettingsSection(
+            createShortcuts: state.createShortcuts,
+            portableMode: state.portableMode,
+            isEnabled: !state.isOperationInProgress,
+            onCreateShortcutsChanged: _controller.updateCreateShortcuts,
+            onPortableModeChanged: _controller.updatePortableMode,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Action buttons
+          ActionButtons(
+            isChecking: state.isChecking,
+            isDownloading: state.isDownloading,
+            isNotInstalled: state.isNotInstalled,
+            hasUpdate: state.hasUpdate,
+            canDownload: !state.isChecking && state.latestVersion != null,
+            onCheckForUpdates: () => _handleCheckForUpdates(context),
+            onDownloadUpdate: state.latestVersion != null ? _handleDownloadUpdate : null,
+            onLaunchEden: !state.isChecking ? _controller.launchEden : null,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _handleCheckForUpdates(BuildContext context) async {
+    // Capture context values before async call
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    
+    try {
+      await _controller.checkForUpdates(forceRefresh: true);
     } catch (e) {
-      setState(() {
-        _isChecking = false;
-      });
-      // Show error message to user if needed
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Failed to check for updates: ${e.toString()}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: theme.colorScheme.error,
           ),
         );
       }
     }
   }
-
-  Future<void> _changeReleaseChannel(String newChannel) async {
-    await _updateService.setReleaseChannel(newChannel);
-    setState(() {
-      _releaseChannel = newChannel;
-      _latestVersion = null;
-    });
-    
-    await _loadCurrentVersion();
-    // Automatically check for updates when switching channels (use cache if available)
-    await _checkForUpdates(forceRefresh: false);
-  }
-
-  Future<void> _downloadUpdate() async {
-    if (_latestVersion == null) return;
-
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress = 0.0;
-    });
-
-    try {
-      await _updateService.downloadUpdate(
-        _latestVersion!,
-        createShortcuts: _createShortcuts,
-        portableMode: _portableMode,
-        onProgress: (progress) {
-          setState(() {
-            _downloadProgress = progress;
-          });
-        },
-        onStatusUpdate: (status) {
-          setState(() {
-          });
-        },
-      );
-
-      setState(() {
-        _isDownloading = false;
-        _currentVersion = _latestVersion;
-      });
-    } catch (e) {
-      setState(() {
-        _isDownloading = false;
-      });
-    }
-  }
-
-  Future<void> _launchEden() async {
-    try {
-      await _updateService.launchEden();
-      if (mounted) {
-        if (Platform.isAndroid) {
-          SystemNavigator.pop();
-        } else {
-          exit(0);
-        }
-      }
-    } catch (e) {
-      setState(() {
-      });
-    }
-  }
-
-  Future<void> _setTestVersion() async {
-    await _updateService.setCurrentVersionForTesting('v1.0.0-test');
-    await _loadCurrentVersion();
-    setState(() {
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  
+  Future<void> _handleDownloadUpdate() async {
+    // Capture context values before async call
+    final messenger = ScaffoldMessenger.of(context);
     final theme = Theme.of(context);
-
-    // Show simplified UI during auto-launch
-    if (widget.isAutoLaunch && _autoLaunchInProgress) {
-      return _buildAutoLaunchUI(theme);
+    
+    try {
+      await _controller.downloadUpdate();
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Download failed: ${e.toString()}'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
     }
-
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.surface,
-              theme.colorScheme.primary.withValues(alpha: 0.1),
-            ],
-            stops: const [0.0, 0.7, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        children: [
-                          AppHeader(
-                            releaseChannel: _releaseChannel,
-                            onTestVersion: _setTestVersion,
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          ChannelSelector(
-                            selectedChannel: _releaseChannel,
-                            isEnabled: !_isChecking && !_isDownloading,
-                            onChannelChanged: (value) {
-                              if (value != null) {
-                                _changeReleaseChannel(value);
-                              }
-                            },
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          VersionCards(
-                            currentVersion: _currentVersion,
-                            latestVersion: _latestVersion,
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                if (_isDownloading) ...[
-                                  DownloadProgress(
-                                    progress: _downloadProgress,
-                                  ),
-                                  const SizedBox(height: 24),
-                                ],
-                                
-                                ActionButtons(
-                                  currentVersion: _currentVersion,
-                                  latestVersion: _latestVersion,
-                                  isChecking: _isChecking,
-                                  isDownloading: _isDownloading,
-                                  createShortcuts: _createShortcuts,
-                                  portableMode: _portableMode,
-                                  onCheckForUpdates: (forceRefresh) => _checkForUpdates(forceRefresh: forceRefresh),
-                                  onDownloadUpdate: _downloadUpdate,
-                                  onLaunchEden: _launchEden,
-                                  onCreateShortcutsChanged: (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        _createShortcuts = value;
-                                      });
-                                      _updateService.setCreateShortcutsPreference(value);
-                                    }
-                                  },
-                                  onPortableModeChanged: (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        _portableMode = value;
-                                      });
-                                      _updateService.setPortableModePreference(value);
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          
-                          const Spacer(),
-                          
-
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAutoLaunchUI(ThemeData theme) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.surface,
-              theme.colorScheme.primary.withValues(alpha: 0.1),
-            ],
-            stops: const [0.0, 0.7, 1.0],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.videogame_asset,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Eden Launcher',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (_isDownloading) ...[
-                LinearProgressIndicator(
-                  value: _downloadProgress,
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${(_downloadProgress * 100).toInt()}% Complete',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-              ] else ...[
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-              ],
-
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
