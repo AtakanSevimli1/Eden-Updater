@@ -29,7 +29,7 @@ chmod +x "$PACKAGE_DIR/eden_updater"
 # Create a simple README
 echo "Creating README..."
 cat > "$PACKAGE_DIR/README.txt" << 'EOF'
-Eden Updater - Linux Portable Version
+Eden Updater - Linux
 
 To run Eden Updater:
 1. Open terminal in this directory
@@ -88,7 +88,7 @@ echo "Total size: ${SIZE_IN_MB} MB ($TOTAL_SIZE bytes)"
 echo ""
 read -p "Create tar.gz file? (y/n): " CREATE_TAR
 if [[ "$CREATE_TAR" =~ ^[Yy]$ ]]; then
-    TAR_NAME="EdenUpdater_Linux_Portable.tar.gz"
+    TAR_NAME="EdenUpdater_Linux.tar.gz"
     echo "Creating tar.gz file..."
     
     if [ -f "$TAR_NAME" ]; then
