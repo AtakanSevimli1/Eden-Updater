@@ -135,34 +135,46 @@ class UpdateService {
     required Function(double) onProgress,
     required Function(String) onStatusUpdate,
   }) async {
+    Directory? tempDir;
+    String? downloadedFilePath;
+    
     try {
       final installPath = await _installationService.getInstallPath();
-      final downloadPath = path.join(installPath, 'downloads');
-      await Directory(downloadPath).create(recursive: true);
+      
+      // Create temporary directory for download
+      tempDir = await Directory.systemTemp.createTemp('eden_updater_');
+      onStatusUpdate('Preparing download...');
 
-      // Download the file
+      // Download the file to temp directory
       onStatusUpdate('Starting download...');
-      final filePath = await _downloadService.downloadFile(
+      downloadedFilePath = await _downloadService.downloadFile(
         updateInfo,
-        downloadPath,
+        tempDir.path,
         onProgress: (progress) => onProgress(progress * 0.5),
         onStatusUpdate: onStatusUpdate,
       );
 
-      // Extract the archive
+      // Extract the archive to temp directory first
+      onStatusUpdate('Extracting archive...');
+      final extractTempDir = await Directory.systemTemp.createTemp('eden_extract_');
+      
       await _extractionService.extractArchive(
-        filePath,
-        installPath,
+        downloadedFilePath,
+        extractTempDir.path,
         onProgress: (progress) {
-          onProgress(0.5 + (progress * 0.4));
+          onProgress(0.5 + (progress * 0.3));
           onStatusUpdate('Extracting... ${(progress * 100).toInt()}%');
         },
       );
 
+      // Move extracted files to final location
+      onStatusUpdate('Installing files...');
+      await _moveExtractedFiles(extractTempDir.path, installPath);
+      
       // Organize the installation
-      onStatusUpdate('Organizing files...');
+      onStatusUpdate('Organizing installation...');
       await _installationService.organizeInstallation(installPath);
-      onProgress(0.95);
+      onProgress(0.9);
 
       // Update version info
       final channel = await getReleaseChannel();
@@ -185,26 +197,77 @@ class UpdateService {
         }
       }
 
-      // Clean up downloaded archive file
-      try {
-        await File(filePath).delete();
-      } catch (e) {
-        // Don't fail if cleanup fails
-      }
-
       onProgress(1.0);
+      onStatusUpdate('Installation complete!');
       
     } catch (e) {
       if (e is AppException) {
         rethrow;
       }
       throw UpdateException('Update failed', e.toString());
+    } finally {
+      // Clean up temporary files and directories
+      await _cleanupTempFiles(tempDir, downloadedFilePath);
+    }
+  }
+  
+  /// Move extracted files from temp directory to install directory
+  Future<void> _moveExtractedFiles(String extractPath, String installPath) async {
+    final extractDir = Directory(extractPath);
+    
+    await for (final entity in extractDir.list()) {
+      final targetPath = path.join(installPath, path.basename(entity.path));
+      
+      if (entity is File) {
+        await entity.copy(targetPath);
+      } else if (entity is Directory) {
+        await FileUtils.copyDirectory(entity.path, targetPath);
+      }
+    }
+  }
+  
+  /// Clean up temporary files and directories
+  Future<void> _cleanupTempFiles(Directory? tempDir, String? downloadedFilePath) async {
+    try {
+      // Delete downloaded file if it exists
+      if (downloadedFilePath != null) {
+        final file = File(downloadedFilePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+      
+      // Delete temporary directories
+      if (tempDir != null && await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+      
+      // Clean up any other temp directories we might have created
+      final systemTempDir = Directory.systemTemp;
+      await for (final entity in systemTempDir.list()) {
+        if (entity is Directory) {
+          final name = path.basename(entity.path);
+          if (name.startsWith('eden_updater_') || name.startsWith('eden_extract_')) {
+            try {
+              await entity.delete(recursive: true);
+            } catch (e) {
+              // Ignore cleanup failures for other temp directories
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Don't fail the entire update if cleanup fails
+      // Just log the error (in a real app, you might want to log this)
     }
   }
 
   /// Launch Eden emulator
   Future<void> launchEden() => _launcherService.launchEden();
 
+  /// Get install path
+  Future<String> getInstallPath() => _installationService.getInstallPath();
+  
   /// Set install path
   Future<void> setInstallPath(String newPath) => _preferencesService.setInstallPath(newPath);
 

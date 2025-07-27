@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
 import '../../core/enums/app_enums.dart';
+import '../../core/utils/cleanup_utils.dart';
 import '../../services/update_service.dart';
 import '../state/updater_state.dart';
 
@@ -18,6 +19,14 @@ class UpdaterController {
   Future<void> initialize({String? channel}) async {
     if (channel != null) {
       await _updateService.setReleaseChannel(channel);
+    }
+    
+    // Clean up old downloads folders and temp files from previous versions
+    try {
+      final installPath = await _updateService.getInstallPath();
+      await CleanupUtils.performGeneralCleanup(installPath);
+    } catch (e) {
+      // Ignore cleanup failures - not critical for app functionality
     }
     
     await _loadCurrentVersion();

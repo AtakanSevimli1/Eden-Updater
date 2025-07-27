@@ -53,8 +53,7 @@ class InstallationService {
       if (entity is Directory) {
         final folderName = path.basename(entity.path);
         
-        if (folderName == 'downloads' || 
-            folderName == 'Eden-Release' || 
+        if (folderName == 'Eden-Release' || 
             folderName == 'Eden-Nightly') {
           continue;
         }
