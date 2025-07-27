@@ -1,0 +1,267 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'V0.0.1'
+        required: true
+        type: string
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+        - release
+        - prerelease
+      release_notes:
+        description: 'Additional release notes (optional)'
+        required: false
+        type: string
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Analyze code
+      run: flutter analyze
+      
+    - name: Build and package Windows
+      run: .\package_windows.ps1
+      shell: powershell
+      
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: eden-updater-windows
+        path: EdenUpdater_Windows_Portable.zip
+        retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev bc
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Analyze code
+      run: flutter analyze
+      
+    - name: Build and package Linux
+      run: |
+        chmod +x package_linux.sh
+        # Run packaging script in non-interactive mode
+        echo "n" | ./package_linux.sh
+      shell: bash
+      
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: eden-updater-linux
+        path: EdenUpdater_Linux_Portable.tar.gz
+        retention-days: 30
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Analyze code
+      run: flutter analyze
+      
+    - name: Build and package Android
+      run: |
+        flutter build apk --release
+        mkdir -p eden_updater_android
+        cp build/app/outputs/flutter-apk/app-release.apk eden_updater_android/EdenUpdater.apk
+        
+    - name: Upload Android artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: eden-updater-android
+        path: eden_updater_android/EdenUpdater.apk
+        retention-days: 30
+
+  create-release:
+    needs: [build-windows, build-linux, build-android]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for changelog generation
+        
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+        cp artifacts/eden-updater-windows/EdenUpdater_Windows_Portable.zip release-assets/
+        cp artifacts/eden-updater-linux/EdenUpdater_Linux_Portable.tar.gz release-assets/
+        cp artifacts/eden-updater-android/EdenUpdater.apk release-assets/
+        
+    - name: Get previous tag
+      id: prev-tag
+      run: |
+        PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        echo "previous_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+        echo "Previous tag: $PREV_TAG"
+        
+    - name: Generate changelog
+      id: changelog
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        PREV_TAG="${{ steps.prev-tag.outputs.previous_tag }}"
+        
+        echo "Generating changelog from $PREV_TAG to HEAD..."
+        
+        # Create changelog
+        CHANGELOG_FILE="CHANGELOG.md"
+        
+        echo "# Eden Updater $VERSION" > $CHANGELOG_FILE
+        echo "" >> $CHANGELOG_FILE
+        echo "## 📦 Downloads" >> $CHANGELOG_FILE
+        echo "" >> $CHANGELOG_FILE
+        echo "| Platform | File | Size |" >> $CHANGELOG_FILE
+        echo "|----------|------|------|" >> $CHANGELOG_FILE
+        
+        # Get file sizes
+        WIN_SIZE=$(du -h release-assets/EdenUpdater_Windows_Portable.zip | cut -f1)
+        LINUX_SIZE=$(du -h release-assets/EdenUpdater_Linux_Portable.tar.gz | cut -f1)
+        ANDROID_SIZE=$(du -h release-assets/EdenUpdater.apk | cut -f1)
+        
+        echo "| Windows | EdenUpdater_Windows_Portable.zip | $WIN_SIZE |" >> $CHANGELOG_FILE
+        echo "| Linux | EdenUpdater_Linux_Portable.tar.gz | $LINUX_SIZE |" >> $CHANGELOG_FILE
+        echo "| Android | EdenUpdater.apk | $ANDROID_SIZE |" >> $CHANGELOG_FILE
+        echo "" >> $CHANGELOG_FILE
+        
+        # Add custom release notes if provided
+        if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+          echo "## 📝 Release Notes" >> $CHANGELOG_FILE
+          echo "" >> $CHANGELOG_FILE
+          echo "${{ github.event.inputs.release_notes }}" >> $CHANGELOG_FILE
+          echo "" >> $CHANGELOG_FILE
+        fi
+        
+        # Generate commit-based changelog
+        if [ -n "$PREV_TAG" ]; then
+          echo "## 🔄 Changes Since $PREV_TAG" >> $CHANGELOG_FILE
+          echo "" >> $CHANGELOG_FILE
+          
+          # Get commits since last tag
+          git log $PREV_TAG..HEAD --oneline --no-merges --pretty=format:"- %s" >> $CHANGELOG_FILE
+          echo "" >> $CHANGELOG_FILE
+          echo "" >> $CHANGELOG_FILE
+          
+          # Get detailed diff stats
+          echo "## 📊 Code Changes" >> $CHANGELOG_FILE
+          echo "" >> $CHANGELOG_FILE
+          echo "\`\`\`" >> $CHANGELOG_FILE
+          git diff --stat $PREV_TAG..HEAD >> $CHANGELOG_FILE
+          echo "\`\`\`" >> $CHANGELOG_FILE
+        else
+          echo "## 🎉 Initial Release" >> $CHANGELOG_FILE
+          echo "" >> $CHANGELOG_FILE
+          echo "This is the first release of Eden Updater." >> $CHANGELOG_FILE
+        fi
+        
+        echo "" >> $CHANGELOG_FILE
+        echo "## 🚀 Installation" >> $CHANGELOG_FILE
+        echo "" >> $CHANGELOG_FILE
+        echo "1. Download the appropriate package for your platform" >> $CHANGELOG_FILE
+        echo "2. Extract (Windows/Linux) or install (Android)" >> $CHANGELOG_FILE
+        echo "3. Run the updater and select your preferred channel" >> $CHANGELOG_FILE
+        echo "4. Install or update Eden with one click" >> $CHANGELOG_FILE
+        echo "" >> $CHANGELOG_FILE
+        echo "## 🔗 Release Sources" >> $CHANGELOG_FILE
+        echo "" >> $CHANGELOG_FILE
+        echo "- **Stable**: [eden-emulator/Releases](https://github.com/eden-emulator/Releases/releases)" >> $CHANGELOG_FILE
+        echo "- **Nightly**: [pflyly/eden-nightly](https://github.com/pflyly/eden-nightly/releases)" >> $CHANGELOG_FILE
+        
+        # Output changelog for use in release
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        cat $CHANGELOG_FILE >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Create Git tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a "${{ github.event.inputs.version }}" -m "Release ${{ github.event.inputs.version }}"
+        git push origin "${{ github.event.inputs.version }}"
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: Eden Updater ${{ github.event.inputs.version }}
+        body: ${{ steps.changelog.outputs.changelog }}
+        files: |
+          release-assets/EdenUpdater_Windows_Portable.zip
+          release-assets/EdenUpdater_Linux_Portable.tar.gz
+          release-assets/EdenUpdater.apk
+        prerelease: ${{ github.event.inputs.release_type == 'prerelease' }}
+        draft: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update version in pubspec.yaml
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        # Remove 'v' prefix if present
+        VERSION_NUMBER=${VERSION#v}
+        
+        # Update pubspec.yaml
+        sed -i "s/^version: .*/version: $VERSION_NUMBER+$(date +%s)/" pubspec.yaml
+        
+        # Commit version update
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add pubspec.yaml
+        git commit -m "Bump version to $VERSION_NUMBER" || echo "No changes to commit"
+        git push origin main || echo "No changes to push"

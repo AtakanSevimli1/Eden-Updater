@@ -84,9 +84,15 @@ SIZE_IN_MB=$(echo "scale=2; $TOTAL_SIZE / 1024 / 1024" | bc -l 2>/dev/null || ec
 echo ""
 echo "Total size: ${SIZE_IN_MB} MB ($TOTAL_SIZE bytes)"
 
-# Offer to create tar.gz
+# Offer to create tar.gz (auto-create in CI)
 echo ""
-read -p "Create tar.gz file? (y/n): " CREATE_TAR
+if [ "$CI" = "true" ] || [ "$GITHUB_ACTIONS" = "true" ]; then
+    CREATE_TAR="y"
+    echo "CI environment detected - automatically creating tar.gz file"
+else
+    read -p "Create tar.gz file? (y/n): " CREATE_TAR
+fi
+
 if [[ "$CREATE_TAR" =~ ^[Yy]$ ]]; then
     TAR_NAME="EdenUpdater_Linux.tar.gz"
     echo "Creating tar.gz file..."
